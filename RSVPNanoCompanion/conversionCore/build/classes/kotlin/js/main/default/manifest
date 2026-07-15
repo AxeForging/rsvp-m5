@@ -1,0 +1,10 @@
+abi_version=2.4.0
+builtins_platform=JS
+compiler_version=2.4.0
+ir_signature_versions=1,2
+jsOutputName=rsvpnano_converter
+language_features=+AllowAnyAsAnActualTypeForExpectInterface +MultiPlatformProjects
+metadata_version=2.4.0
+serializedIrFileFingerprints=7qhzzluosqm0.11bwh57fzd89g 2hlt2xsbs94wm.16tkghdae4zlo 2dsmm1e2bi7fd.21xdvlypzdjw7 ss7h5u8zhfem.6e16dqrkiw31 3hpmwx3bhpjwa.304j7novxzwat 3u424mohzjy7r.1nge68auu9zrw 2h8012ceq4k50.23q9anibnudfw lyolquj3hies.247zcmrzmwhn2 30srf1i8y8nrj.1sjdgbx04y3mw 3khej6r3difs2.whf35ittg8r 2mmqbi2kf33x.38s29c4kxx4r 1tayux8m2rrjk.2on8kapj6a9bq 3oihkt8ry922q.36qyismd6rsw7 2hr9cfv9rfcp1.1264hne9udtbh 3h02nufwqbx8s.91w10ddp61k7 3j0au1ml4qunv.3dbwrk4zu9rj4 2t2bi0ixa1wdq.2zl9597g0q01h
+serializedKlibFingerprint=1qrq7irotvclb.32bxism4y6tof
+unique_name=rsvpnano\:conversionCore

@@ -14,7 +14,7 @@ RSVP M5 is a fork of [RSVP Nano](https://github.com/ionutdecebal/rsvpnano) by th
 - A USB-C data cable.
 - A microSD card.
 - Chrome or Edge on a desktop computer for browser flashing and the web converter.
-- Optional: native iOS or Android companion apps built locally while public distribution is pending.
+- A phone, tablet, or computer browser for the device-hosted companion page over Wi-Fi.
 
 ## Supported Hardware
 
@@ -106,13 +106,13 @@ Large books now load through the same indexed reading path as smaller books, wit
 
 ### Option 2: Web Companion
 
-The device can host its own browser companion page.
+The device hosts its own browser companion page over Wi-Fi.
 
-1. Swipe up from the bottom edge to open quick settings.
-2. Choose `Sync`.
-3. The device shows the Wi-Fi network name and the browser URL.
-4. Connect your phone, tablet, or computer to the `RSVP-M5-XXXXXX` Wi-Fi network.
-5. A captive portal usually opens the sync page automatically. If it does not, open the URL shown on the device, usually `http://192.168.4.1`, or `http://rsvp-m5.local`.
+1. Swipe down from the top edge to open the main menu, then choose `Sync`.
+2. The device shows the Wi-Fi network name and the browser URL.
+3. Connect a browser to the device:
+   - **Station mode (default):** once home Wi-Fi is saved, the device joins your network on the next Sync, so your phone keeps its internet. Open the `http://192.168.x.y` URL shown on the device, or `http://rsvp-m5.local`, from any browser on the same network.
+   - **Access-point mode (first run / fallback):** if no home Wi-Fi is saved yet, the device makes its own `RSVP-M5-XXXXXX` network. Join it and the captive portal usually opens the page automatically; otherwise open `http://192.168.4.1`. Save your home Wi-Fi under `Settings` so the next Sync uses station mode.
 
 The web companion has pages for:
 
@@ -122,23 +122,6 @@ The web companion has pages for:
 - `RSS`: manage RSS feed URLs.
 - `Help`: quick notes for connection, conversion, SD cards, and RSS.
 
-The web companion remains the easiest option from desktop browsers and for anyone who does not have
-a native companion app installed.
-
-### Option 3: Native Companion Apps
-
-The iOS and Android companion apps support companion sync, article drafts, share/import flows, RSS
-feed management, device settings, and library progress.
-
-Public app distribution is not set up yet. The iOS app can be installed from a Mac with Xcode, and
-the Android app can be built and installed with Android Studio or the Android SDK.
-
-See:
-
-[`RSVPNanoCompanion/ios/RSVPNanoCompanion/README.md`](RSVPNanoCompanion/ios/RSVPNanoCompanion/README.md)
-
-[`RSVPNanoCompanion/androidApp/README.md`](RSVPNanoCompanion/androidApp/README.md)
-
 ## Home Wi-Fi, RSS, And OTA
 
 The device can save home Wi-Fi credentials for features that need internet access, such as RSS feed checks and OTA firmware updates.
@@ -146,11 +129,13 @@ The device can save home Wi-Fi credentials for features that need internet acces
 You can set Wi-Fi credentials from:
 
 - The web companion `Settings` page.
-- The native companion app settings page.
 - The on-device Wi-Fi settings page.
 - Advanced users can still use `/config/ota.conf`.
 
-RSS feeds are managed from the web companion or the native app, then checked from the device with
+Saving home Wi-Fi also makes Sync join your network in station mode, so the companion is reachable
+over the LAN while your phone keeps its internet.
+
+RSS feeds are managed from the web companion, then checked from the device with
 `Articles -> Update RSS`. New articles are saved into `/books/articles`.
 
 RSS support in `v0.0.8` includes:
@@ -212,7 +197,7 @@ Sync
 
 `Brightness` cycles through the brightness presets. `Theme` cycles Dark, Light, Night, and Yellow.
 `Focus Timer` opens the orientation-based timer. `Sync` starts the device-hosted companion page for
-browser or native app sync.
+browser sync.
 
 USB mass-storage transfer is not available on the Core2, so copy `.rsvp` files with Wi-Fi Sync or
 directly to the SD card.
@@ -303,20 +288,19 @@ check` also lives under Settings.
 
 ### Companion Sync
 
-Use this page to connect the native companion app or the web companion.
+Use this page to reach the device-hosted web companion from a browser.
 
-1. Swipe up from the bottom edge.
-2. Choose `Sync`.
-3. Connect to the Wi-Fi network shown on the device.
-4. Open the URL shown on the device, or let the captive portal open it for you.
-5. Use the web companion or native companion app.
-6. Exit from the device when finished.
+1. Swipe down from the top edge and choose `Sync`.
+2. Connect to the network shown on the device: your home Wi-Fi in station mode, or the device's own `RSVP-M5-XXXXXX` network on first run.
+3. Open the URL shown on the device, or let the captive portal open it for you.
+4. Use the web companion in your browser.
+5. Exit from the device when finished.
 
 When Companion Sync exits, the device reloads settings and refreshes the library.
 
 ### RSS Feeds
 
-Use the web companion or native app to manage feed URLs. Then open `Articles -> Update RSS` on the
+Use the web companion to manage feed URLs. Then open `Articles -> Update RSS` on the
 device.
 
 The device shows live progress as it checks feeds. Saved articles appear in `Articles`.
@@ -350,26 +334,6 @@ If the old folder layout needs repair, the device now asks before changing the c
 `v0.0.8` includes the long-book and unsupported-character improvements from earlier releases. Common punctuation is normalized, ellipses and hyphenated sentence breaks are handled more carefully, and many accented Latin characters render directly or fall back to readable plain Latin equivalents.
 
 The current renderer is best for English and European Latin-script languages. Complex scripts still need additional font and shaping work.
-
-## Companion App Status
-
-The native companion apps are working locally, but public distribution is not set up yet.
-
-Current app features include:
-
-- Library view for books and articles.
-- Article drafts, editing, preview, and sync.
-- Share/import flows.
-- Fetch article title and text where available.
-- Device settings editor.
-- RSS feed management.
-- Help and FAQ pages.
-
-Temporary install instructions are in:
-
-[`RSVPNanoCompanion/ios/RSVPNanoCompanion/README.md`](RSVPNanoCompanion/ios/RSVPNanoCompanion/README.md)
-
-[`RSVPNanoCompanion/androidApp/README.md`](RSVPNanoCompanion/androidApp/README.md)
 
 ## Build From Source
 
@@ -407,13 +371,9 @@ Monitor serial output:
 pio device monitor
 ```
 
-The iOS app lives in:
-
-```text
-RSVPNanoCompanion/ios/RSVPNanoCompanion
-```
-
-Open the Xcode project from that folder when installing the app locally.
+The hosted flasher page in `web/` is static. Its in-browser book converter
+(`web/generated/converter/`) is a prebuilt JavaScript bundle committed to the repo, so the page
+needs no build step.
 
 To export browser-flasher and OTA firmware assets for a release:
 
@@ -444,18 +404,15 @@ The most recent reader work focuses on touch ergonomics and more resilient RSS d
 - Adds right-swipe Back navigation throughout menus, including text entry.
 - Adds a Reader controls setting that can put rewind in the top-right corner for one-handed use,
   while moving the battery label to the top-left.
-- Exposes the Reader controls setting on device, in the device-hosted web companion, and in the
-  shared native companion app.
+- Exposes the Reader controls setting on device and in the device-hosted web companion.
 - Raises RSS feed and article size limits for longer full-text feeds.
 - Accepts usable partial RSS or Atom downloads when complete items arrive before a slow feed times
   out.
 
 The next areas of work are:
 
-- Public app distribution.
-- More Android/iOS device testing and polish.
 - More capable article extraction for sites that do not expose full RSS content.
-- A fuller browser-hosted companion experience for desktop and Android users.
+- A fuller browser-hosted companion experience for desktop and mobile.
 - More font and script support.
 
 ## License

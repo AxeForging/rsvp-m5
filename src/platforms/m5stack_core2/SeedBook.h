@@ -2,7 +2,7 @@
 // One-shot demo seed so a freshly-flashed device with a blank SD has something
 // to read. Content is original onboarding text plus retellings of Aesop's
 // fables (public domain) -- safe to ship. ponytail: drop -DRSVP_SEED_SAMPLE_BOOK
-// once books are loaded via the companion app or SD card.
+// once books are loaded via the companion page or SD card.
 namespace SeedBook {
 inline constexpr const char* kFileName = "Welcome to RSVP M5.txt";
 inline constexpr const char* kText = R"RSVP_SEED(
