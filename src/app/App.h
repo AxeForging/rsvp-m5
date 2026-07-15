@@ -414,7 +414,7 @@ private:
     void handleCurrentBookReadFailure(uint32_t nowMs, const char* detail);
     void renderReaderWord();
     void renderContextPreview();
-    void renderWpmFeedback(uint32_t nowMs);
+    void renderWpmFeedback(uint32_t nowMs, bool resetTimer = true);
     size_t phantomBeforeCharTarget() const;
     size_t phantomAfterCharTarget() const;
     String collectPhantomBeforeText(size_t currentIndex, size_t charTarget) const;

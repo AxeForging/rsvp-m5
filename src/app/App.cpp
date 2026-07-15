@@ -25,7 +25,7 @@
 static const char* kAppTag = "app";
 constexpr uint32_t kOtaCheckTaskStackBytes = 10240;
 constexpr uint32_t kBootSplashMs = 750;
-constexpr uint32_t kWpmFeedbackMs = 900;
+constexpr uint32_t kWpmFeedbackMs = 1800;
 constexpr uint32_t kPowerOffHoldMs = 1600;
 constexpr uint32_t kPowerOffReleaseWaitMs = 4000;
 constexpr uint32_t kBatterySampleIntervalMs = 180000;
@@ -1068,16 +1068,32 @@ void App::updateReader(uint32_t nowMs) {
     if (changed && maybeStartChapterTransition(previousIndex, reader_.currentIndex(), nowMs)) {
         return;
     }
+    // Keep the "N WPM" overlay pinned across word flips until its window closes (it's set live
+    // while playing, so the paused-only updateWpmFeedback() timeout never runs here).
+    const bool wpmWindowOpen =
+        wpmFeedbackVisible_ && static_cast<int32_t>(wpmFeedbackUntilMs_ - nowMs) > 0;
+    if (wpmFeedbackVisible_ && !wpmWindowOpen) {
+        wpmFeedbackVisible_ = false;
+    }
+
     if (scrollModeEnabled()) {
         if (changed || nowMs - lastScrollAnimationRenderMs_ >= kScrollAnimationFrameMs) {
-            renderScrollReader(nowMs);
+            if (wpmWindowOpen) {
+                renderWpmFeedback(nowMs, false);
+            } else {
+                renderScrollReader(nowMs);
+            }
             lastScrollAnimationRenderMs_ = nowMs;
         }
         return;
     }
 
     if (changed) {
-        renderReaderWord();
+        if (wpmWindowOpen) {
+            renderWpmFeedback(nowMs, false);
+        } else {
+            renderReaderWord();
+        }
     }
 }
 
@@ -6861,14 +6877,18 @@ void App::renderScrollReader(uint32_t nowMs, const String& overlayText) {
                               overlayText, readerFooterStatusLabel(), chrome);
 }
 
-void App::renderWpmFeedback(uint32_t nowMs) {
+void App::renderWpmFeedback(uint32_t nowMs, bool resetTimer) {
     if (!ensureCurrentBookWordAvailable(nowMs)) {
         return;
     }
 
     applyReaderUiOrientation();
     wpmFeedbackVisible_ = true;
-    wpmFeedbackUntilMs_ = nowMs + kWpmFeedbackMs;
+    // resetTimer=false pins the existing window while playback flips words underneath it, so the
+    // overlay lingers its full duration instead of vanishing at the next word.
+    if (resetTimer) {
+        wpmFeedbackUntilMs_ = nowMs + kWpmFeedbackMs;
+    }
     if (scrollModeEnabled()) {
         renderScrollReader(nowMs, String(reader_.wpm()) + " WPM");
         return;
