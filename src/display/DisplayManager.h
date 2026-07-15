@@ -176,6 +176,15 @@ class DisplayManager {
   void drawBatteryBadge(int logicalWidth, int logicalHeight);
   void drawBatteryIcon(int x, int y, int w, int h, int fillPercent, uint16_t color);
   void drawBookIcon(int x, int y, int w, int h, uint16_t color);
+  // CJK (Japanese/Chinese/Korean) rendering: bundled M5GFX Unicode fonts rasterized into
+  // virtualFrame_. The reader's custom fonts are byte-indexed (Latin only), so CJK words take
+  // this parallel path. See CjkText.h for codepoint classification.
+  void compositeCjkString(const String &utf8, int dstX, int dstYtop, int sizeScale, uint16_t color,
+                          uint8_t alpha);
+  void renderCjkPhantom(const String &beforeText, const String &word, const String &afterText,
+                        bool hasWpm, uint16_t wpm, const String &chapterLabel,
+                        uint8_t progressPercent, bool showFooter, const String &footerStatusLabel,
+                        ReaderChrome chrome);
   void drawPreviousSentenceHint(bool playing);
   void drawLeftArrow(int x, int y, int w, int h, uint16_t color);
   void drawDownArrow(int x, int y, int w, int h, uint16_t color);
