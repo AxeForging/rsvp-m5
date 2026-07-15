@@ -538,6 +538,7 @@ bool CompanionSyncManager::begin(const Config &config) {
   }
 
   instance_ = this;
+  captiveValidated_ = false;  // fresh session: signal "captive" until the page loads
   pairingCode_ = String(static_cast<uint32_t>(esp_random()) % 900000UL + 100000UL);
   statusLine1_ = "Starting sync";
   statusLine2_ = "Preparing Wi-Fi";
@@ -744,10 +745,12 @@ void CompanionSyncManager::handleInfo() {
                       "\"networkSsid\":\"" + jsonEscape(networkSsid_) + "\"," +
                       "\"pairingCode\":\"" + pairingCode_ + "\"," +
                       "\"uploadPath\":\"/api/books\"" + "}";
+  captiveValidated_ = true;  // a real browser is on the page -> let the OS mark the AP usable
   server_.send(200, "application/json", body);
 }
 
 void CompanionSyncManager::handleRoot() {
+  captiveValidated_ = true;  // portal page served -> stop signalling "captive" to the OS probes
   server_.sendHeader("Cache-Control", "no-store, max-age=0");
   server_.send_P(200, "text/html", kWebCompanionHtml);
 }
@@ -1070,14 +1073,50 @@ void CompanionSyncManager::handleBookUpload() {
 }
 
 void CompanionSyncManager::handleNotFound() {
-  // Captive portal: bounce any non-API request (incl. the OS connectivity-check URLs) to
-  // the landing page so joining the AP pops "sign in to network". API paths keep JSON 404s.
-  if (networkMode_ == NetworkMode::AccessPoint && !server_.uri().startsWith("/api")) {
+  const String uri = server_.uri();
+  if (networkMode_ != NetworkMode::AccessPoint || uri.startsWith("/api")) {
+    server_.send(404, "application/json", "{\"ok\":false,\"error\":\"Not found\"}");
+    return;
+  }
+
+  // OS connectivity-check probes (DNS-wildcarded to us). The trick to keep a phone connected:
+  // BEFORE the user reaches the page, answer "captive" so the portal auto-opens; AFTER the page
+  // has loaded (captiveValidated_), answer the OS "success" signal (Android 204 / Apple "Success"
+  // / Windows text) so the OS marks the network usable and STOPS dropping the phone -- which is
+  // also what makes 192.168.4.1 stay reachable.
+  const bool androidProbe = uri == "/generate_204" || uri == "/gen_204";
+  const bool appleProbe = uri == "/hotspot-detect.html" || uri == "/library/test/success.html";
+
+  if (captiveValidated_) {
+    if (androidProbe) {
+      server_.send(204, "text/plain", "");
+      return;
+    }
+    if (appleProbe) {
+      server_.send(200, "text/html", "<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>");
+      return;
+    }
+    if (uri == "/connecttest.txt") {
+      server_.send(200, "text/plain", "Microsoft Connect Test");
+      return;
+    }
+    if (uri == "/ncsi.txt") {
+      server_.send(200, "text/plain", "Microsoft NCSI");
+      return;
+    }
+  }
+
+  if (androidProbe) {
+    // A non-204 makes Android show "Sign in to network" and keep the AP connected.
     server_.sendHeader("Location", baseUrl() + "/", true);
     server_.send(302, "text/plain", "");
     return;
   }
-  server_.send(404, "application/json", "{\"ok\":false,\"error\":\"Not found\"}");
+
+  // Any other path: serve the portal page directly so the captive mini-browser renders it
+  // in one round-trip (more reliable than a bare redirect).
+  server_.sendHeader("Cache-Control", "no-store, max-age=0");
+  server_.send_P(200, "text/html", kWebCompanionHtml);
 }
 
 String CompanionSyncManager::settingsJson() {

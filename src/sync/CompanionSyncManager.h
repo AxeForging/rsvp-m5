@@ -100,4 +100,5 @@ class CompanionSyncManager {
   bool active_ = false;
   bool serverStarted_ = false;
   bool dnsStarted_ = false;
+  bool captiveValidated_ = false;  // flips true once a browser loads the portal page
 };
