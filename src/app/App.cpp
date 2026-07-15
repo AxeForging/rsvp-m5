@@ -1221,6 +1221,35 @@ bool App::handleReaderInput(const Input::Event& event, uint32_t nowMs) {
         return true;
     }
 
+#if RSVP_SIDE_BUTTONS_ADJUST_WPM
+    // Core2's three physical buttons are single-purpose: left = slower, center = play/pause,
+    // right = faster. Every gesture on them is consumed here so a long/triple press can never
+    // fall through to standby, brightness, menu, or power-off. Menu is the top-edge swipe,
+    // power-off lives in the menu, and display/theme options live in Settings.
+    if (state_ == AppState::Paused || state_ == AppState::Playing) {
+        const bool press = event.gesture == Input::Gesture::ShortPressed
+                        || event.gesture == Input::Gesture::LongPressed;
+        if (Input::hasControl(event.controls, Input::InputKey)) {
+            if (press) {
+                adjustReaderWpm(-1, nowMs);
+            }
+            return true;
+        }
+        if (Input::hasControl(event.controls, Input::InputPower)) {
+            if (press) {
+                adjustReaderWpm(1, nowMs);
+            }
+            return true;
+        }
+        if (Input::hasControl(event.controls, Input::InputPrimary)) {
+            if (event.gesture == Input::Gesture::ShortPressed) {
+                toggleReaderPlaybackFromShortcut(nowMs);
+            }
+            return true;
+        }
+    }
+#endif
+
     if (Input::hasControl(event.controls, Input::InputPrimary) && event.gesture == Input::Gesture::LongPressed
         && state_ != AppState::Booting && state_ != AppState::Sleeping) {
         enterStandby(nowMs);
@@ -1239,26 +1268,9 @@ bool App::handleReaderInput(const Input::Event& event, uint32_t nowMs) {
         return true;
     }
 
-#if RSVP_SIDE_BUTTONS_ADJUST_WPM
-    // Boards with dedicated speed buttons (Core2: left = slower, right = faster) adjust the
-    // live WPM instead of rewinding/opening the menu. Long-press repeats the step (so holding
-    // "faster" keeps speeding up rather than tripping power-off). Menu + power stay on the
-    // top-edge swipe.
-    if ((event.gesture == Input::Gesture::ShortPressed || event.gesture == Input::Gesture::LongPressed)
-        && (state_ == AppState::Paused || state_ == AppState::Playing)) {
-        if (Input::hasControl(event.controls, Input::InputKey)) {
-            adjustReaderWpm(-1, nowMs);
-            return true;
-        }
-        if (Input::hasControl(event.controls, Input::InputPower)) {
-            adjustReaderWpm(1, nowMs);
-            return true;
-        }
-    }
-#endif
-
     // InputKey short-press rewinds one sentence (distinct from Primary's play/pause) so a
     // 3-button reader has play/pause, rewind, and menu instead of two duplicate pause keys.
+    // (Core2 handles its buttons above; this is for boards without dedicated speed buttons.)
     if (Input::hasControl(event.controls, Input::InputKey) && event.gesture == Input::Gesture::ShortPressed
         && (state_ == AppState::Paused || state_ == AppState::Playing)) {
         rewindSentenceAction(nowMs);
