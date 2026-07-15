@@ -1,0 +1,1370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#05070a" />
+    <title>RSVP M5 Web Flasher</title>
+    <link rel="icon" href="./favicon.svg" />
+    <link rel="stylesheet" href="./axeforge.css" />
+    <script
+      type="module"
+      src="https://unpkg.com/esp-web-tools@10.1.0/dist/web/install-button.js?module"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+    <script type="module" src="./library.js"></script>
+    <script type="module" src="./components/install-firmware.js"></script>
+    <style>
+      /* AxeForge shell (axeforge.css) + RSVP M5's terracotta as the custom flavor accent.
+         The page's legacy semantic vars are remapped onto the AxeForge dark tokens so the
+         existing component rules re-skin without a rewrite. */
+      :root {
+        --af-accent: #d3542f;
+        --af-accent-hover: #b8461f;
+        --af-accent-contrast: #ffffff;
+
+        --ink: var(--af-text);
+        --muted: var(--af-text-muted);
+        --paper: var(--af-bg);
+        --panel: var(--af-surface);
+        --panel-2: var(--af-surface-2);
+        --accent: var(--af-accent);
+        --accent-deep: var(--af-accent-hover);
+        --line: var(--af-line);
+        --shadow: rgba(0, 0, 0, 0.5);
+        --ok: #27c93f;
+        --err: #ff5f56;
+        --esp-tools-button-color: var(--accent);
+        --esp-tools-button-text-color: var(--af-accent-contrast);
+        --esp-tools-button-border-radius: var(--af-radius);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        font-family: var(--af-font-sans);
+        background: var(--af-bg);
+      }
+
+      main {
+        width: min(1040px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 52px 0 44px;
+      }
+
+      .hero {
+        margin-bottom: 28px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: var(--af-radius-lg);
+        background: var(--af-surface);
+        box-shadow: 0 24px 60px var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .intro {
+        padding: clamp(28px, 6vw, 58px);
+      }
+
+      .eyebrow {
+        margin: 0 0 16px;
+        color: var(--accent-deep);
+        font: 700 0.76rem/1.2 var(--af-font-sans);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 11ch;
+        margin: 0;
+        font-size: clamp(3.3rem, 10vw, 7.5rem);
+        line-height: 0.86;
+        letter-spacing: -0.075em;
+      }
+
+      .lead {
+        max-width: 56ch;
+        margin: 28px 0 0;
+        color: var(--muted);
+        font-size: clamp(1.05rem, 2vw, 1.32rem);
+        line-height: 1.55;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .step-card + .step-card {
+        margin-top: 28px;
+      }
+
+      install-firmware {
+        display: block;
+        margin-bottom: 28px;
+      }
+
+      .step-card-toggle {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        padding: 20px 24px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .step-card-toggle:hover {
+        background: var(--af-surface-3);
+      }
+
+      .step-card-toggle:focus-visible {
+        outline: 3px solid rgba(211, 84, 47, 0.28);
+        outline-offset: -3px;
+      }
+
+      .section-header-main {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .section-header-label {
+        min-width: 0;
+      }
+
+      .section-kicker {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--accent-deep);
+        font: 700 0.72rem/1.2 var(--af-font-sans);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .section-title {
+        display: block;
+        font-size: 1.18rem;
+        line-height: 1.15;
+      }
+
+      .step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.85rem;
+        height: 1.85rem;
+        flex-shrink: 0;
+        border-radius: var(--af-radius);
+        background: var(--accent);
+        color: var(--af-accent-contrast);
+        font: 800 0.86rem/1 var(--af-font-sans);
+      }
+
+      .section-summary {
+        color: var(--muted);
+        font: 700 0.78rem/1.3 var(--af-font-sans);
+        text-align: right;
+      }
+
+      .section-summary:empty {
+        display: none;
+      }
+
+      .chevron {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        color: var(--muted);
+        transition: transform 180ms ease;
+      }
+
+      .step-card.is-collapsed .chevron,
+      .install-steps.is-collapsed .chevron {
+        transform: rotate(-90deg);
+      }
+
+      .install-steps {
+        overflow: hidden;
+      }
+
+      .install-steps .section-header {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        border: 0;
+        padding: 20px 24px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .install-steps .section-header h2 {
+        flex: 1;
+        margin: 0;
+        padding: 0;
+        font-size: 1.18rem;
+      }
+
+      .flash-history {
+        margin-left: auto;
+        color: var(--muted);
+        font: 700 0.78rem/1.3 var(--af-font-sans);
+        text-align: right;
+      }
+
+      .flash-history:empty {
+        display: none;
+      }
+
+      .flash-history.update-available {
+        color: var(--ok);
+        background: color-mix(in srgb, var(--ok) 16%, transparent);
+        padding: 2px 10px;
+        border-radius: var(--af-radius);
+        font-size: 0.82em;
+        font-weight: 600;
+      }
+
+      .install-steps.is-collapsed .section-body {
+        display: none;
+      }
+
+      /* Step-cards (SD card, workspace) collapse via the is-collapsed class. The JS also
+         sets [hidden] on the body, but .section-body's explicit display overrides it, so
+         this rule is what actually hides a collapsed body. */
+      .step-card.is-collapsed .section-body {
+        display: none;
+      }
+
+      .install-warning {
+        margin: 8px 0 0;
+        font-size: 0.82rem;
+        color: var(--accent-deep);
+        text-align: center;
+      }
+
+      .section-body {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border-top: 1px solid var(--line);
+      }
+
+      .section-body.section-body-single {
+        display: block;
+      }
+
+      .section-body-inner {
+        min-width: 0;
+        padding: 24px 28px 28px;
+      }
+
+      .section-body:not(.section-body-single) > .section-body-inner + .section-body-inner {
+        border-left: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      }
+
+      .section-card-stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .install-options {
+        display: grid;
+        gap: 12px;
+      }
+
+      .affiliate-links {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 16px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--af-radius-lg);
+        background: var(--af-surface-3);
+      }
+
+      .affiliate-disclosure {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+
+      .affiliate-link-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .affiliate-link-list a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 12px;
+        border-radius: var(--af-radius);
+        color: var(--accent-deep);
+        background: var(--af-surface);
+        font: 800 0.82rem/1 var(--af-font-sans);
+        text-decoration: none;
+      }
+
+      .affiliate-link-list a:hover {
+        color: var(--af-accent-contrast);
+        background: var(--accent);
+      }
+
+      .install-option {
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: var(--af-radius-lg);
+        background: var(--af-surface-3);
+      }
+
+      .install-option strong {
+        font-size: 1.04rem;
+      }
+
+      .install-option-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .latest-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--ok);
+        font: 700 0.76rem/1 var(--af-font-sans);
+      }
+
+      .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--ok);
+        box-shadow: 0 0 0 0 rgba(76, 122, 74, 0.5);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(76, 122, 74, 0.5);
+        }
+
+        70% {
+          box-shadow: 0 0 0 6px rgba(76, 122, 74, 0);
+        }
+
+        100% {
+          box-shadow: 0 0 0 0 rgba(76, 122, 74, 0);
+        }
+      }
+
+      .feature-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .feature-list li {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
+
+      .feature-list li::before {
+        content: "✓";
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .uptodate-badge[hidden] {
+        display: none;
+      }
+
+      .uptodate-badge {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 0;
+        border-radius: var(--af-radius);
+        padding: 13px 18px;
+        color: var(--af-accent-contrast);
+        background: var(--ok);
+        font: 800 0.95rem/1 var(--af-font-sans);
+        box-shadow: 0 12px 26px rgba(76, 122, 74, 0.24);
+        box-sizing: border-box;
+      }
+
+      .uptodate-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .uptodate-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        font-weight: 600;
+        font-size: 0.72rem;
+        line-height: 1.3;
+        opacity: 0.85;
+      }
+
+      .uptodate-reinstall {
+        display: block;
+        margin-top: 6px;
+        text-align: center;
+        color: var(--muted);
+        font: 600 0.78rem/1.3 var(--af-font-sans);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+      }
+
+      esp-web-install-button {
+        margin-top: 4px;
+      }
+
+      button[slot="activate"] {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 0;
+        border-radius: var(--af-radius);
+        padding: 13px 18px;
+        color: var(--af-accent-contrast);
+        background: var(--accent);
+        font: 800 0.95rem/1 var(--af-font-sans);
+        cursor: pointer;
+        box-shadow: 0 12px 26px rgba(211, 84, 47, 0.24);
+      }
+
+      button[slot="activate"] .btn-version {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        font-weight: 600;
+        font-size: 0.72rem;
+        line-height: 1.3;
+        opacity: 0.7;
+      }
+
+      button[slot="activate"]:hover {
+        background: var(--accent-deep);
+      }
+
+      button[slot="activate"]:disabled {
+        cursor: not-allowed;
+        opacity: 0.58;
+        box-shadow: none;
+      }
+
+      .warning {
+        margin-top: 16px;
+        padding: 14px 16px;
+        border-left: 4px solid var(--accent);
+        border-radius: 14px;
+        background: rgba(211, 84, 47, 0.08);
+        color: var(--accent-deep);
+        font-family: var(--af-font-sans);
+        font-size: 0.9rem;
+      }
+
+      .workspace-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      }
+
+      .workspace-pane {
+        padding: 28px;
+      }
+
+      .workspace-pane + .workspace-pane {
+        border-left: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+      }
+
+      .workspace-pane h2,
+      .workspace-pane h3 {
+        margin: 0;
+        font-size: 1.38rem;
+      }
+
+      .workspace-copy {
+        margin: 12px 0 0;
+        color: var(--muted);
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+        align-items: flex-start;
+      }
+
+      .tool-button,
+      .tool-select {
+        border: 1px solid var(--line);
+        border-radius: var(--af-radius);
+        background: var(--af-surface-3);
+        color: var(--ink);
+        font: 700 0.93rem/1.15 var(--af-font-sans);
+      }
+
+      .tool-button {
+        padding: 12px 16px;
+        cursor: pointer;
+        max-width: 100%;
+        white-space: nowrap;
+      }
+
+      .tool-button:hover:enabled {
+        border-color: color-mix(in srgb, var(--af-accent) 50%, transparent);
+        background: var(--af-surface);
+      }
+
+      .tool-button:disabled,
+      .tool-select:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .tool-button-primary {
+        border-color: transparent;
+        color: var(--af-accent-contrast);
+        background: var(--accent);
+        box-shadow: 0 12px 26px rgba(211, 84, 47, 0.24);
+      }
+
+      .tool-button-primary:hover:enabled {
+        background: var(--accent-deep);
+      }
+
+      .tool-select {
+        min-width: 220px;
+        padding: 11px 16px;
+      }
+
+      .dropzone {
+        display: block;
+        margin-top: 22px;
+        padding: 24px;
+        border: 1.5px dashed color-mix(in srgb, var(--af-accent) 35%, transparent);
+        border-radius: var(--af-radius-lg);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+          radial-gradient(circle at top right, rgba(211, 84, 47, 0.14), transparent 16rem);
+        overflow: hidden;
+        transition:
+          border-color 150ms ease,
+          transform 150ms ease,
+          box-shadow 150ms ease;
+      }
+
+      .dropzone.is-active {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px rgba(211, 84, 47, 0.2);
+        transform: translateY(-1px);
+      }
+
+      .dropzone strong {
+        display: block;
+        font-size: 1.04rem;
+      }
+
+      .dropzone p {
+        margin: 10px 0 0;
+        color: var(--muted);
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .meta-card {
+        min-width: 0;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: var(--af-radius-lg);
+        background: var(--af-surface-3);
+      }
+
+      .meta-card span {
+        display: block;
+        color: var(--muted);
+        font: 700 0.73rem/1.2 var(--af-font-sans);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .meta-card strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.03rem;
+        line-height: 1.24;
+        overflow-wrap: anywhere;
+      }
+
+      .meta-card-copy {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+      }
+
+      .inline-note {
+        margin-top: 18px;
+        padding: 14px 16px;
+        border-radius: var(--af-radius-lg);
+        background: var(--af-surface-3);
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .workspace-status {
+        margin-top: 20px;
+        padding: 15px 16px;
+        border-left: 4px solid var(--line);
+        border-radius: var(--af-radius-lg);
+        background: var(--af-surface-3);
+        color: var(--muted);
+        min-height: 66px;
+        overflow-wrap: anywhere;
+      }
+
+      .workspace-status[data-tone="busy"] {
+        border-left-color: var(--accent);
+        color: var(--accent-deep);
+        background: rgba(211, 84, 47, 0.08);
+      }
+
+      .workspace-status[data-tone="error"] {
+        border-left-color: var(--err);
+        color: var(--err);
+        background: rgba(156, 48, 36, 0.08);
+      }
+
+      .workspace-status[data-tone="success"] {
+        border-left-color: var(--ok);
+        color: var(--ok);
+        background: rgba(76, 122, 74, 0.1);
+      }
+
+      .workspace-status strong {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--ink);
+        font-size: 0.96rem;
+      }
+
+      .library-list {
+        display: grid;
+        gap: 14px;
+        margin: 20px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .library-item {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--af-surface-3);
+      }
+
+      .library-item-head,
+      .library-item-meta,
+      .library-item-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .library-item-head {
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .library-item-title {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .library-item-title strong {
+        font-size: 1.02rem;
+      }
+
+      .library-item-title span,
+      .library-item-copy,
+      .library-empty {
+        color: var(--muted);
+      }
+
+      .library-item-meta {
+        margin-top: 14px;
+      }
+
+      .pill {
+        padding: 0.42rem 0.72rem;
+        border-radius: var(--af-radius);
+        background: color-mix(in srgb, var(--af-accent) 14%, transparent);
+        color: var(--af-accent);
+        font: 700 0.76rem/1 var(--af-font-sans);
+        letter-spacing: 0.02em;
+      }
+
+      .pill[data-state="ready"] {
+        background: rgba(76, 122, 74, 0.12);
+        color: var(--ok);
+      }
+
+      .pill[data-state="error"] {
+        background: rgba(156, 48, 36, 0.1);
+        color: var(--err);
+      }
+
+      .pill[data-state="working"] {
+        background: rgba(211, 84, 47, 0.12);
+        color: var(--accent-deep);
+      }
+
+      .library-item-copy {
+        margin-top: 12px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .library-item-actions {
+        margin-top: 16px;
+      }
+
+      .library-item-actions .tool-button {
+        padding: 10px 14px;
+        font-size: 0.86rem;
+      }
+
+      .library-empty {
+        margin-top: 20px;
+        padding: 26px 20px;
+        border: 1px dashed var(--line);
+        border-radius: 22px;
+        text-align: center;
+        background: var(--af-surface-3);
+      }
+
+      ol {
+        padding-left: 1.35rem;
+      }
+
+      code {
+        padding: 0.12em 0.4em;
+        border-radius: var(--af-radius);
+        background: var(--af-surface-3);
+        color: var(--af-text);
+        font-family: var(--af-font-mono);
+        font-size: 0.9em;
+      }
+
+      footer {
+        margin-top: 24px;
+        color: var(--muted);
+        text-align: center;
+        font: 0.9rem/1.4 var(--af-font-sans);
+      }
+
+      @media (max-width: 980px) {
+        .section-body {
+          grid-template-columns: 1fr;
+        }
+
+        .section-body:not(.section-body-single) > .section-body-inner + .section-body-inner {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+
+        .workspace-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .workspace-pane + .workspace-pane {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+        }
+      }
+
+      @media (max-width: 760px) {
+        main {
+          width: min(100% - 20px, 560px);
+          padding-top: 18px;
+        }
+
+        .meta-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .intro,
+        .workspace-pane,
+        .section-body-inner {
+          padding: 22px;
+        }
+
+        .step-card-toggle {
+          padding: 18px 20px;
+        }
+
+        .section-summary {
+          max-width: 11rem;
+        }
+      }
+
+      .compat-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgba(5, 7, 10, 0.72);
+        backdrop-filter: blur(4px);
+      }
+
+      .compat-overlay[hidden] {
+        display: none;
+      }
+
+      .compat-modal {
+        max-width: 480px;
+        width: 100%;
+        padding: clamp(24px, 5vw, 40px);
+        border: 1px solid var(--line);
+        border-radius: var(--af-radius-lg);
+        background: var(--af-surface);
+        box-shadow: 0 24px 60px var(--shadow);
+        backdrop-filter: blur(16px);
+        text-align: left;
+      }
+
+      .compat-modal h2 {
+        margin: 0 0 12px;
+        font-size: 1.3rem;
+      }
+
+      .compat-modal p {
+        margin: 0 0 10px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .compat-dismiss {
+        margin-top: 20px;
+        padding: 13px 28px;
+        border: 0;
+        border-radius: var(--af-radius);
+        color: var(--af-accent-contrast);
+        background: var(--accent);
+        font: 800 0.95rem/1 var(--af-font-sans);
+        cursor: pointer;
+        box-shadow: 0 12px 26px rgba(211, 84, 47, 0.24);
+      }
+
+      .compat-dismiss:hover {
+        background: var(--accent-deep);
+      }
+
+      /* RSVP reader demo — GSAP flashes one word at a time; the focus (ORP) letter is
+         held on the centre guide via a 1fr / auto / 1fr grid, like the device does. */
+      .rsvp-demo {
+        margin-top: 40px;
+      }
+      .rsvp-screen {
+        position: relative;
+        display: flex;
+        align-items: center;
+        height: 156px;
+        border: 1px solid var(--af-line);
+        border-radius: var(--af-radius-lg);
+        background: var(--af-surface-2);
+        overflow: hidden;
+      }
+      .rsvp-guide {
+        position: absolute;
+        top: 18px;
+        bottom: 18px;
+        left: 50%;
+        width: 1px;
+        background: color-mix(in srgb, var(--af-accent) 42%, transparent);
+      }
+      .rsvp-word {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: baseline;
+        width: 100%;
+        font: 700 clamp(2.4rem, 6.4vw, 3.7rem) / 1 var(--af-font-sans);
+        letter-spacing: -0.015em;
+        will-change: transform, opacity;
+      }
+      .rsvp-word .pre {
+        text-align: right;
+      }
+      .rsvp-word .post {
+        text-align: left;
+      }
+      .rsvp-word .orp {
+        text-align: center;
+        color: var(--af-accent);
+      }
+      .rsvp-meta {
+        margin: 16px 2px 0;
+        text-align: center;
+        color: var(--af-text-muted);
+        font: 500 0.85rem/1 var(--af-font-mono);
+      }
+
+      /* AxeForge topbar — the cross-tool family signal (see AxeForge brand kit). */
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 18px;
+        min-height: 68px;
+        border-bottom: 1px solid var(--af-line);
+        background: var(--af-surface);
+        position: sticky;
+        top: 0;
+        z-index: 40;
+      }
+      .topbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: var(--af-text);
+      }
+      .topbar-mark {
+        flex-shrink: 0;
+      }
+      .topbar-wordmark {
+        font: 700 1.3rem/1 var(--af-font-sans);
+        letter-spacing: -0.01em;
+      }
+      .topbar-tagline {
+        display: block;
+        margin-top: 3px;
+        color: var(--af-text-muted);
+        font: 500 0.78rem/1 var(--af-font-sans);
+      }
+      .topbar-actions {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .topbar-link {
+        color: var(--af-text-muted);
+        text-decoration: none;
+        font: 600 0.85rem/1 var(--af-font-sans);
+      }
+      .topbar-link:hover {
+        color: var(--af-text);
+      }
+    </style>
+  </head>
+  <body class="technical-grid">
+    <header class="topbar">
+      <a class="topbar-brand" href="https://tools.axeforge.io">
+        <svg class="topbar-mark" viewBox="0 0 32 32" width="28" height="28" role="img" aria-label="AxeForge">
+          <path d="M16 5 V24.5" stroke="var(--af-text, #ffffff)" stroke-width="3.5" />
+          <path fill="var(--af-accent, #d3542f)" d="M16 10 L7 4 A8.5 8.5 0 0 0 7 16 Z" />
+          <path fill="var(--af-accent, #d3542f)" d="M16 10 L25 4 A8.5 8.5 0 0 1 25 16 Z" />
+          <rect x="14.25" y="26.5" width="3.5" height="3.5" fill="var(--af-accent, #d3542f)" />
+        </svg>
+        <span>
+          <span class="topbar-wordmark">RSVP M5</span>
+          <span class="topbar-tagline">M5Stack RSVP reader · AxeForge</span>
+        </span>
+      </a>
+      <div class="topbar-actions">
+        <a class="topbar-link" href="https://github.com/AxeForging/rsvp-m5" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </header>
+    <main>
+      <section class="hero">
+        <div class="card intro">
+          <p class="eyebrow">Browser firmware installer</p>
+          <h1>RSVP M5</h1>
+          <p class="lead">
+            Flash the reader from Chrome or Edge without installing VS Code, PlatformIO,
+            or command-line tools. Connect the device by USB, click install,
+            and let the browser write it directly to the ESP32.
+          </p>
+
+          <div class="rsvp-demo" id="rsvp-demo" aria-hidden="true">
+            <div class="rsvp-screen">
+              <span class="rsvp-guide"></span>
+              <div class="rsvp-word" id="rsvp-word">
+                <span class="pre">R</span><span class="orp">S</span><span class="post">VP</span>
+              </div>
+            </div>
+            <p class="rsvp-meta"><span id="rsvp-wpm">240 wpm</span> · one word at a time</p>
+          </div>
+        </div>
+
+      </section>
+
+      <install-firmware></install-firmware>
+
+      <section class="card step-card" id="sdcard-section">
+        <button
+          class="step-card-toggle"
+          id="sdcard-toggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="sdcard-content"
+        >
+          <span class="section-header-main">
+            <span class="step-number">2</span>
+            <span class="section-header-label">
+              <span class="section-kicker">Storage Workflow</span>
+              <span class="section-title">Prepare SD Card</span>
+            </span>
+          </span>
+          <span class="section-summary">Sync books into <code>/books/books</code></span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="section-body" id="sdcard-content">
+          <div class="section-body-inner">
+            <p>
+              The recommended path is to convert supported source books in the browser, then place
+              the generated <code>.rsvp</code> files in the SD card&rsquo;s <code>/books/books</code> folder.
+            </p>
+            <ol>
+              <li>Insert the SD card into the reader.</li>
+              <li>Open <code>USB transfer</code> on the device, or remove the card and use a card reader.</li>
+              <li>Pick the SD card&rsquo;s <code>/books/books</code> folder in the workspace below, then import, clean sidecars, and sync.</li>
+            </ol>
+            <p class="inline-note">
+              The firmware can read <code>.rsvp</code>, <code>.txt</code>, and <code>.epub</code>
+              files from <code>/books/books</code>, <code>/books/articles</code>, and files directly
+              under <code>/books</code>, but browser-converted <code>.rsvp</code> files are
+              the best-supported book format.
+            </p>
+          </div>
+          <div class="section-body-inner">
+            <div class="section-card-stack">
+              <div class="meta-card">
+                <span>USB Transfer</span>
+                <strong>Expose the SD card from the device menu</strong>
+                <p class="meta-card-copy">
+                  On the default USB-enabled firmware, open <code>USB transfer</code> from the main
+                  menu to expose the SD card over USB. When you finish copying files, eject the
+                  device from your computer, then hold <code>PWR</code> to leave transfer mode.
+                </p>
+              </div>
+              <div class="meta-card">
+                <span>Folder Layout</span>
+                <strong>Keep book files under <code>/books/books</code></strong>
+                <p class="meta-card-copy">
+                  The workspace below can sync directly into the books folder. Put saved articles in
+                  <code>/books/articles</code> so they appear on the device&rsquo;s Articles page.
+                </p>
+              </div>
+              <div class="meta-card">
+                <span>Cleanup</span>
+                <strong>Remove metadata and interrupted sidecars</strong>
+                <p class="meta-card-copy">
+                  The <code>Clean Sidecars</code> action helps clear platform metadata and temporary
+                  files such as <code>.rsvp.tmp</code>, <code>.rsvp.converting</code>, and
+                  <code>.rsvp.failed</code>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card step-card" id="workspace-section">
+        <button
+          class="step-card-toggle"
+          id="workspace-toggle"
+          type="button"
+          aria-expanded="true"
+          aria-controls="workspace-content"
+        >
+          <span class="section-header-main">
+            <span class="step-number">3</span>
+            <span class="section-header-label">
+              <span class="section-kicker">Browser Conversion</span>
+              <span class="section-title">Library Workspace</span>
+            </span>
+          </span>
+          <span class="section-summary" id="workspace-summary-header"></span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="section-body section-body-single" id="workspace-content">
+          <div class="workspace-shell">
+            <div class="workspace-pane">
+              <p class="workspace-copy">
+                Bring books into the browser, convert them into <code>.rsvp</code>, and sync the
+                results back into the SD card&rsquo;s <code>/books/books</code> folder without leaving this page.
+              </p>
+
+              <div class="toolbar">
+                <button class="tool-button tool-button-primary" id="library-folder-button" type="button">
+                  Connect SD Card
+                </button>
+                <button class="tool-button" id="library-add-button" type="button">
+                  Add Books
+                </button>
+                <button class="tool-button" id="library-folder-import-button" type="button">
+                  Import From Folder
+                </button>
+                <button class="tool-button" id="library-folder-clean-button" type="button">
+                  Clean Sidecars
+                </button>
+                <button class="tool-button" id="library-download-button" type="button">
+                  Download .zip
+                </button>
+                <button class="tool-button" id="library-sync-button" type="button">
+                  Sync To Folder
+                </button>
+                <button class="tool-button" id="library-clear-button" type="button">
+                  Clear Library
+                </button>
+              </div>
+
+              <label class="dropzone" id="library-dropzone" for="library-file-input">
+                <strong>Drop supported books here</strong>
+                <p>
+                  EPUB, TXT, Markdown, and HTML sources are converted locally in your browser. Nothing
+                  is uploaded to a server.
+                </p>
+              </label>
+              <input
+                id="library-file-input"
+                type="file"
+                accept=".epub,.txt,.md,.markdown,.html,.htm,.xhtml"
+                multiple
+                hidden
+              />
+
+              <div class="meta-grid">
+                <div class="meta-card">
+                  <span>Compatibility</span>
+                  <strong>Automatic extended-Latin output</strong>
+                  <p class="meta-card-copy">
+                    Preserves common accented, Baltic, Sami, and other extended-Latin letters while
+                    staying friendly to the current firmware.
+                  </p>
+                </div>
+                <div class="meta-card">
+                  <span>Selected Folder</span>
+                  <strong id="library-folder-label">No /books/books folder selected</strong>
+                </div>
+                <div class="meta-card">
+                  <span>Library Summary</span>
+                  <strong id="library-summary">0 converted books ready</strong>
+                </div>
+                <div class="meta-card">
+                  <span>Folder Inventory</span>
+                  <strong id="library-folder-summary">Pick the SD card&rsquo;s /books/books folder to scan it</strong>
+                </div>
+              </div>
+
+              <p class="inline-note">
+                Put your SD card in a reader, then <strong>Connect SD Card</strong> and pick its
+                <code>/books/books</code> folder for one-click import, cleanup, and sync. No card reader?
+                Add books from your computer and download the <code>.rsvp</code> files instead. Everything
+                is converted locally in your browser &mdash; nothing is uploaded.
+              </p>
+              <p class="inline-note">
+                Don&rsquo;t want to keep pulling the SD card? Open <strong>Sync</strong> on the device
+                (Menu or top-edge swipe), join its <code>RSVP-M5</code> Wi-Fi network, and upload the
+                <code>.rsvp</code> files wirelessly &mdash; no cable, no card removal.
+              </p>
+
+              <div class="workspace-status" id="library-status" data-tone="info">
+                <strong>Ready to build a library</strong>
+                Connect your SD card, or add books from your computer, to bring supported source books
+                into the workspace.
+              </div>
+            </div>
+
+            <div class="workspace-pane">
+              <h3>Converted Books</h3>
+              <p class="workspace-copy">
+                Each imported source is turned into a reader-ready <code>.rsvp</code> file so you can
+                download it or sync everything back to the selected folder in one step.
+              </p>
+
+              <ul class="library-list" id="library-list"></ul>
+              <div class="library-empty" id="library-empty">
+                Add a few books and the converted library will appear here.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        RSVP M5 is open source. Build it, modify it, improve it, and share what you make.
+      </footer>
+      <div class="compat-overlay" id="compat-modal" hidden>
+        <div class="compat-modal">
+          <h2>Browser Not Supported</h2>
+          <p>
+            The firmware installer requires the Web Serial API, available in
+            <strong>Chrome</strong> or <strong>Edge</strong> on macOS, Windows, Linux, or ChromeOS.
+          </p>
+          <p>
+            Safari, Firefox, and all mobile browsers do not currently support Web Serial.
+            You can still use the <strong>Library Workspace</strong> below to convert books.
+          </p>
+          <button class="compat-dismiss" id="compat-dismiss" type="button">Got It</button>
+        </div>
+      </div>
+    </main>
+    <script>
+      // RSVP reader demo: flash one word at a time, ORP (focus) letter in the accent.
+      (function () {
+        var wordEl = document.getElementById("rsvp-word");
+        if (!wordEl) return;
+
+        var phrase = (
+          "Reading one word at a time keeps your eyes still and your mind fast. " +
+          "RSVP M5 turns any book into a calm focused stream of words."
+        ).split(/\s+/);
+
+        function esc(s) {
+          return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+        function orpIndex(len) {
+          if (len <= 1) return 0;
+          if (len <= 5) return 1;
+          if (len <= 9) return 2;
+          return 3;
+        }
+        function renderWord(w) {
+          var i = orpIndex(w.length);
+          return (
+            '<span class="pre">' + esc(w.slice(0, i)) + "</span>" +
+            '<span class="orp">' + esc(w[i]) + "</span>" +
+            '<span class="post">' + esc(w.slice(i + 1)) + "</span>"
+          );
+        }
+        function setWord(w) {
+          wordEl.innerHTML = renderWord(w);
+        }
+
+        function start() {
+          var reduce =
+            window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          if (!window.gsap || reduce) {
+            var i = 0;
+            setWord(phrase[0]);
+            setInterval(function () {
+              i = (i + 1) % phrase.length;
+              setWord(phrase[i]);
+            }, 280);
+            return;
+          }
+          var tl = gsap.timeline({ repeat: -1 });
+          phrase.forEach(function (w) {
+            var letters = w.replace(/[^A-Za-z0-9]/g, "").length;
+            var hold = 0.1 + Math.min(0.16, letters * 0.016); // longer words linger, like the reader
+            tl.call(setWord, [w]);
+            tl.fromTo(
+              wordEl,
+              { autoAlpha: 0, yPercent: 16 },
+              { autoAlpha: 1, yPercent: 0, duration: 0.1, ease: "power2.out" }
+            );
+            tl.to(wordEl, { duration: hold });
+            tl.to(wordEl, { autoAlpha: 0.5, duration: 0.05 });
+          });
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", start);
+        } else {
+          start();
+        }
+      })();
+
+      if (!("serial" in navigator)) {
+        document.getElementById("compat-modal").hidden = false;
+        document.getElementById("compat-dismiss").addEventListener("click", function () {
+          document.getElementById("compat-modal").hidden = true;
+        });
+      }
+
+      function setSectionCollapsed(sectionId, collapsed) {
+        const section = document.getElementById(sectionId);
+        const toggle = document.getElementById(sectionId.replace("-section", "-toggle"));
+        const content = document.getElementById(sectionId.replace("-section", "-content"));
+        if (!section || !toggle || !content) {
+          return;
+        }
+
+        section.classList.toggle("is-collapsed", collapsed);
+        toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        content.hidden = collapsed;
+      }
+
+      function initSectionToggle(sectionId, collapsed) {
+        const toggle = document.getElementById(sectionId.replace("-section", "-toggle"));
+        if (!toggle) {
+          return;
+        }
+
+        setSectionCollapsed(sectionId, collapsed);
+        toggle.addEventListener("click", function () {
+          const section = document.getElementById(sectionId);
+          setSectionCollapsed(sectionId, !section.classList.contains("is-collapsed"));
+        });
+      }
+
+      initSectionToggle("sdcard-section", false);
+      initSectionToggle("workspace-section", false);
+    </script>
+  </body>
+</html>

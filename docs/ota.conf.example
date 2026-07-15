@@ -1,0 +1,22 @@
+# Optional advanced OTA override file.
+# The normal setup flow is now on-device: Settings -> Wi-Fi -> Choose network.
+# Copy this file to the SD card as /config/ota.conf only if you want a fallback
+# or want to override the default repo/asset settings.
+
+wifi_ssid=YourWiFiName
+wifi_password=YourWiFiPassword
+
+# Optional. Defaults point at the main RSVP M5 repo, and the Core2 chooses its OTA
+# asset automatically. You should not usually need to override `asset_name` unless
+# you are testing a custom release channel.
+# github_owner=AxeForging
+# github_repo=rsvp-m5
+# github_tag=v0.0.1
+#
+# Or put the repo and tag in one value. The OTA Tag setting accepts the same form:
+# github_tag=AxeForging/rsvp-m5@v0.0.1
+#
+# asset_name=rsvp-m5-core2-ota.bin
+
+# Optional. When true, the device checks the latest GitHub Release during boot.
+auto_check=false
