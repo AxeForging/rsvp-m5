@@ -175,6 +175,44 @@
         font-size: 1.32rem;
       }
 
+      /* AxeForge raccoon mascots */
+      .intro-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: clamp(16px, 3vw, 40px);
+        align-items: center;
+      }
+      .hero-mascot {
+        width: clamp(150px, 20vw, 244px);
+        height: auto;
+        filter: drop-shadow(0 16px 34px rgba(0, 0, 0, 0.55));
+      }
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      .head-mascot {
+        flex: 0 0 auto;
+        width: clamp(88px, 12vw, 136px);
+        height: auto;
+        filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.5));
+      }
+      .toggle-mascot {
+        flex: 0 0 auto;
+        align-self: center;
+        height: clamp(48px, 7vw, 74px);
+        width: auto;
+        margin-left: 8px;
+        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
+      }
+      @media (max-width: 760px) {
+        .intro-top { grid-template-columns: 1fr; justify-items: start; }
+        .hero-mascot { width: 168px; margin-top: 6px; }
+        .head-mascot, .toggle-mascot { display: none; }
+      }
+
       .step-number {
         display: inline-flex;
         align-items: center;
@@ -1041,13 +1079,19 @@
     <main>
       <section class="hero">
         <div class="card intro">
-          <p class="eyebrow">Browser firmware installer</p>
-          <h1>RSVP M5</h1>
-          <p class="lead">
-            Flash the reader from Chrome or Edge without installing VS Code, PlatformIO,
-            or command-line tools. Connect the device by USB, click install,
-            and let the browser write it directly to the ESP32.
-          </p>
+          <div class="intro-top">
+            <div>
+              <p class="eyebrow">Browser firmware installer</p>
+              <h1>RSVP M5</h1>
+              <p class="lead">
+                Flash the reader from Chrome or Edge without installing VS Code, PlatformIO,
+                or command-line tools. Connect the device by USB, click install,
+                and let the browser write it directly to the ESP32.
+              </p>
+            </div>
+            <img class="hero-mascot" src="./img/raccoon-flash.png" width="294" height="482"
+                 alt="AxeForge raccoon flashing an M5Stack Core2 over USB" loading="eager">
+          </div>
 
           <div class="rsvp-demo" id="rsvp-demo" aria-hidden="true">
             <div class="rsvp-screen">
@@ -1063,8 +1107,14 @@
       </section>
 
       <section class="card" id="features-section">
-        <span class="section-kicker">What it does</span>
-        <span class="section-title">A focused reader that stays out of your way</span>
+        <div class="section-head">
+          <div>
+            <span class="section-kicker">What it does</span>
+            <span class="section-title">A focused reader that stays out of your way</span>
+          </div>
+          <img class="head-mascot" src="./img/raccoon-straps.png" width="332" height="511"
+               alt="AxeForge raccoon reading on the go" loading="lazy">
+        </div>
         <div class="meta-grid">
           <div class="meta-card">
             <span>Read</span>
@@ -1188,6 +1238,8 @@
             </span>
           </span>
           <span class="section-summary" id="workspace-summary-header"></span>
+          <img class="toggle-mascot" src="./img/raccoon-reading.png" width="337" height="357"
+               alt="AxeForge raccoon reading a Core2" loading="lazy">
           <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
