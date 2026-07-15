@@ -507,7 +507,7 @@ private:
     size_t focusTimerGenreSelectedIndex_ = 0;
     uint8_t standbyTimerIndex_ = 0;
     uint8_t brightnessLevelIndex_ = 4;
-    uint8_t readerFontSizeIndex_ = 0;
+    uint8_t readerFontSizeIndex_ = 1;  // medium (44px): fits ~14-char words (~99%); L0/62px clips ~9+
     uint16_t pacingLongWordDelayMs_ = 200;
     uint16_t pacingComplexWordDelayMs_ = 200;
     uint16_t pacingPunctuationDelayMs_ = 200;
