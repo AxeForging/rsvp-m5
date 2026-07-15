@@ -190,8 +190,8 @@
       .section-head {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 20px;
+        justify-content: flex-start;
+        gap: clamp(16px, 3vw, 34px);
       }
       .head-mascot {
         flex: 0 0 auto;
@@ -205,6 +205,7 @@
         height: clamp(48px, 7vw, 74px);
         width: auto;
         margin-left: 8px;
+        transform: scaleX(-1);  /* face the reading raccoon inward, toward the content */
         filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
       }
       @media (max-width: 760px) {
@@ -1108,12 +1109,12 @@
 
       <section class="card" id="features-section">
         <div class="section-head">
+          <img class="head-mascot" src="./img/raccoon-straps.png" width="332" height="511"
+               alt="AxeForge raccoon reading on the go" loading="lazy">
           <div>
             <span class="section-kicker">What it does</span>
             <span class="section-title">A focused reader that stays out of your way</span>
           </div>
-          <img class="head-mascot" src="./img/raccoon-straps.png" width="332" height="511"
-               alt="AxeForge raccoon reading on the go" loading="lazy">
         </div>
         <div class="meta-grid">
           <div class="meta-card">
