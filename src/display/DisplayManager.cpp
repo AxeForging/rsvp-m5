@@ -2082,30 +2082,11 @@ void DisplayManager::renderRsvpWordWithWpm(const String &word, uint16_t wpm,
 
 namespace {
 
-// One reusable off-screen canvas rasterizes CJK glyphs (lazily allocated in PSRAM). The reader shows
-// one short word per flash, so a full-width band is plenty and avoids per-frame allocation. efont is
-// 24px native; we draw at 2x for a legible ~48px focus character.
-constexpr int kCjkCanvasHeight = 64;
-constexpr int kCjkBaseFontPx = 24;
-constexpr int kCjkSizeScale = 2;
-M5Canvas *gCjkCanvas = nullptr;
+constexpr int kCjkBaseFontPx = 24;  // efont native size
+constexpr int kCjkSizeScale = 2;    // drawn at 2x -> ~48px focus glyphs
 
-M5Canvas *cjkCanvas() {
-  if (gCjkCanvas == nullptr) {
-    gCjkCanvas = new M5Canvas(&M5.Display);
-    gCjkCanvas->setPsram(true);
-    gCjkCanvas->setColorDepth(16);
-    if (gCjkCanvas->createSprite(kDisplayWidth, kCjkCanvasHeight) == nullptr) {
-      delete gCjkCanvas;
-      gCjkCanvas = nullptr;
-    }
-  }
-  return gCjkCanvas;
-}
-
-// Script-appropriate bundled font. efont is gothic and covers all CJK; Hangul takes the KR variant,
-// everything else (Han + kana + CJK punctuation) uses JA. Chinese Han currently renders with the
-// Japanese glyph forms -- refine to CN/TW per book language later.
+// Script-appropriate bundled font (gothic efont). Hangul -> KR; Han/kana/punctuation -> JA (Chinese
+// Han uses Japanese glyph forms for now; per-book CN/TW refinement is a follow-up).
 const lgfx::IFont *cjkFontFor(const String &utf8) {
   size_t i = 0;
   uint32_t cp = 0;
@@ -2142,104 +2123,49 @@ bool isCjkText(const String &s) {
   return false;
 }
 
-int cjkMeasureWidth(const String &utf8) {
-  M5Canvas *cv = cjkCanvas();
-  if (cv == nullptr || utf8.isEmpty()) {
+// Measure `utf8` at the CJK draw size using the live display's font metrics.
+int cjkDisplayWidth(const String &utf8) {
+  if (utf8.isEmpty()) {
     return 0;
   }
-  cv->setFont(cjkFontFor(utf8));
-  cv->setTextSize(kCjkSizeScale);
-  return cv->textWidth(utf8.c_str());
+  M5.Display.setFont(cjkFontFor(utf8));
+  M5.Display.setTextSize(kCjkSizeScale);
+  return M5.Display.textWidth(utf8.c_str());
 }
 
-// Blend fg over bg in RGB565 by alpha (0..255).
-uint16_t blend565(uint16_t bg, uint16_t fg, uint8_t a) {
-  const uint32_t br = (bg >> 11) & 0x1F, bgc = (bg >> 5) & 0x3F, bb = bg & 0x1F;
-  const uint32_t fr = (fg >> 11) & 0x1F, fgc = (fg >> 5) & 0x3F, fb = fg & 0x1F;
-  const uint32_t r = (fr * a + br * (255 - a)) / 255;
-  const uint32_t g = (fgc * a + bgc * (255 - a)) / 255;
-  const uint32_t b = (fb * a + bb * (255 - a)) / 255;
-  return static_cast<uint16_t>((r << 11) | (g << 5) | b);
+// Draw one CJK string at (x, yTop) in `color`, transparent background, at the CJK draw size.
+void drawCjkSegment(const String &utf8, int x, int yTop, uint16_t color) {
+  if (utf8.isEmpty()) {
+    return;
+  }
+  M5.Display.setFont(cjkFontFor(utf8));
+  M5.Display.setTextSize(kCjkSizeScale);
+  M5.Display.setTextColor(color);  // single-arg = transparent background
+  M5.Display.drawString(utf8.c_str(), x, yTop);
 }
 
 }  // namespace
 
-// Rasterize `utf8` white-on-black into the CJK canvas, then blend each glyph pixel into virtualFrame_
-// at (dstX, dstYtop) using `color` and `alpha`. efont is 1-bit, so a nonzero canvas pixel is full
-// coverage -- and pure white/black are byte-order-agnostic, so reading the raw sprite buffer is safe.
-void DisplayManager::compositeCjkString(const String &utf8, int dstX, int dstYtop, int sizeScale,
-                                        uint16_t color, uint8_t alpha) {
-  M5Canvas *cv = cjkCanvas();
-  if (cv == nullptr || utf8.isEmpty() || alpha == 0) {
-    return;
-  }
-  cv->setFont(cjkFontFor(utf8));
-  cv->setTextSize(sizeScale);
-  const int w = cv->textWidth(utf8.c_str());
-  const int h = std::min(kCjkBaseFontPx * sizeScale, kCjkCanvasHeight);
-  if (w <= 0 || w > cv->width()) {
-    return;
-  }
-  cv->fillSprite(0x0000);
-  cv->setTextColor(0xFFFF);
-  cv->setCursor(0, 0);
-  cv->print(utf8.c_str());
-
-  const uint16_t *buf = static_cast<const uint16_t *>(cv->getBuffer());
-  const int cw = cv->width();
-  for (int gy = 0; gy < h; ++gy) {
-    const int fy = dstYtop + gy;
-    if (fy < 0 || fy >= kDisplayHeight) {
-      continue;
-    }
-    for (int gx = 0; gx < w; ++gx) {
-      const int fx = dstX + gx;
-      if (fx < 0 || fx >= kDisplayWidth) {
-        continue;
-      }
-      if (buf[gy * cw + gx] == 0) {
-        continue;
-      }
-      const size_t idx = static_cast<size_t>(fy) * kVirtualBufferWidth + fx;
-      virtualFrame_[idx] = blend565(virtualFrame_[idx], color, alpha);
-    }
-  }
-}
-
-// CJK reader frame: faded before-context, accent focus char on the anchor, faded after-context --
-// the "ghost words" layout, in the bundled CJK font. Mirrors renderPhantomRsvpWord's chrome/flush.
+// CJK reader frame. The reader's own fonts are byte-indexed (Latin only), so CJK words draw with the
+// bundled M5GFX Unicode font straight onto the panel: build background + chrome + anchor ticks into
+// virtualFrame_ and flush, then overlay the glyphs. Logical<->panel is the identity map on Core2, so
+// logical coordinates address the panel directly. Keeps the "ghost words" layout: faded neighbours,
+// accent focus character centred on the anchor.
 void DisplayManager::renderCjkPhantom(const String &beforeText, const String &word,
                                       const String &afterText, bool hasWpm, uint16_t wpm,
                                       const String &chapterLabel, uint8_t progressPercent,
                                       bool showFooter, const String &footerStatusLabel,
                                       ReaderChrome chrome) {
-  const int scale = 1;
-  const int virtualWidth = kDisplayWidth;
-  const int virtualHeight = kDisplayHeight;
-  const int glyphH = std::min(kCjkBaseFontPx * kCjkSizeScale, kCjkCanvasHeight);
-  const int textY = std::max(0, (virtualHeight - glyphH) / 2);
-  const int anchorX = (virtualWidth * currentAnchorPercent()) / 100;
+  const int glyphH = kCjkBaseFontPx * kCjkSizeScale;
+  const int textY = std::max(0, (kDisplayHeight - glyphH) / 2);
+  const int anchorX = (kDisplayWidth * currentAnchorPercent()) / 100;
   const int gap = 12;
 
-  const int wFocus = cjkMeasureWidth(word);
-  const int focusX = anchorX - wFocus / 2;  // centre the focus character on the anchor
-  const uint16_t phantom = blendOverBackground(wordColor(), kPhantomAlphaMedium);
-
-  clearVirtualBuffer(virtualWidth, virtualHeight);
+  clearVirtualBuffer(kDisplayWidth, kDisplayHeight);
   drawRsvpAnchorGuide(anchorX, textY, glyphH);
-
-  if (!beforeText.isEmpty()) {
-    const int wBefore = cjkMeasureWidth(beforeText);
-    compositeCjkString(beforeText, focusX - gap - wBefore, textY, kCjkSizeScale, phantom, 255);
-  }
-  compositeCjkString(word, focusX, textY, kCjkSizeScale, focusColor(), 255);
-  if (!afterText.isEmpty()) {
-    compositeCjkString(afterText, focusX + wFocus + gap, textY, kCjkSizeScale, phantom, 255);
-  }
-
   if (hasWpm) {
     const int wpmY = std::max(
-        0, virtualHeight - kTinyGlyphHeight * kTinyScale - kWpmFeedbackBottomMargin - 24);
+        0, kDisplayHeight - kTinyGlyphHeight * kTinyScale - kWpmFeedbackBottomMargin - 24);
     drawTinyTextCentered(String(wpm) + " WPM", wpmY, focusColor(), kTinyScale);
   }
   if (showFooter) {
@@ -2253,7 +2179,24 @@ void DisplayManager::renderCjkPhantom(const String &beforeText, const String &wo
   if (chrome.showBattery) {
     drawBatteryBadge();
   }
-  flushScaledFrame(scale, virtualWidth, virtualHeight);
+  flushScaledFrame(1, kDisplayWidth, kDisplayHeight);
+
+  // Overlay the glyphs directly. M5.Display takes normal RGB565 (converts internally) -- do NOT use
+  // the panel-swapped colours the frame buffer stores.
+  const int wFocus = cjkDisplayWidth(word);
+  const int focusX = anchorX - wFocus / 2;  // centre the focus character on the anchor
+  const uint16_t phantom = blendOverBackground(wordColor(), kPhantomAlphaMedium);
+
+  M5.Display.startWrite();
+  M5.Display.setTextDatum(m5gfx::textdatum_t::top_left);
+  if (!beforeText.isEmpty()) {
+    drawCjkSegment(beforeText, focusX - gap - cjkDisplayWidth(beforeText), textY, phantom);
+  }
+  drawCjkSegment(word, focusX, textY, focusColor());
+  if (!afterText.isEmpty()) {
+    drawCjkSegment(afterText, focusX + wFocus + gap, textY, phantom);
+  }
+  M5.Display.endWrite();
 }
 
 void DisplayManager::renderPhantomRsvpWord(const String &beforeText, const String &word,
