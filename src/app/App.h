@@ -580,6 +580,7 @@ private:
     bool usingStorageBook_ = false;
     bool storageReady_ = false;
     bool pendingBootBookLoad_ = false;
+    bool bootSplashActive_ = true;  // show the boot splash for every load screen until the first word
     bool batteryPresent_ = false;
     bool batterySampleInitialized_ = false;
     bool batteryRuntimeEstimateReady_ = false;

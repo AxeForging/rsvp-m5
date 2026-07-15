@@ -1841,11 +1841,11 @@ void DisplayManager::flushFullWidthLogicalBand(int yStart, int yEnd) {
 }
 
 void DisplayManager::renderBootImage() {
-  if (!initialized_) {
-    return;
+  if (!initialized_ || lastRenderKey_ == "boot-image") {
+    return;  // already showing -> skip the redundant JPEG decode/blit (called on every load step)
   }
-  // Direct JPEG blit bypasses the virtual framebuffer, so invalidate the cache key -- the next
-  // framebuffer render must repaint fully rather than assume the panel still matches it.
+  // Direct JPEG blit bypasses the virtual framebuffer; the key both dedupes repeat calls and
+  // forces the next framebuffer render to repaint fully rather than assume the panel matches it.
   Board::Display::drawJpeg(kBootImageJpeg, kBootImageJpegLen);
   lastRenderKey_ = "boot-image";
 }

@@ -786,7 +786,7 @@ void App::begin() {
     return;
 #endif
 
-    display_.renderProgress("SD", "Loading books", "Use SD converter for EPUB", 0);
+    display_.renderBootImage();  // boot splash covers the SD/library load, not a bare progress bar
     storageReady_ = storage_.begin();
     const uint16_t savedWpm = preferences_.getUShort(kPrefWpm, reader_.wpm());
     reader_.setWpm(savedWpm);
@@ -5542,7 +5542,7 @@ void App::loadPendingBootBook(uint32_t nowMs) {
     }
 
     pendingBootBookLoad_ = false;
-    display_.renderStatus("Loading book", currentBookTitle_, "Please wait");
+    display_.renderBootImage();  // keep the splash up while the boot book loads
     const uint32_t startedMs = millis();
     BookOpenOptions loadOptions;
     loadOptions.allowIndexBuild = true;
@@ -6763,7 +6763,7 @@ String App::phantomAfterText() const {
 
 void App::renderActiveReader(uint32_t nowMs) {
     if (pendingBootBookLoad_) {
-        display_.renderStatus("Loading book", currentBookTitle_, "Please wait");
+        display_.renderBootImage();  // boot book load stays under the splash
         return;
     }
 
@@ -6833,6 +6833,7 @@ void App::handleCurrentBookReadFailure(uint32_t nowMs, const char* detail) {
 }
 
 void App::renderReaderWord() {
+    bootSplashActive_ = false;  // first real word -> boot is over, loading screens return to normal
     applyReaderUiOrientation();
     contextViewVisible_ = false;
     const String beforeText = phantomWordsEnabled_ ? phantomBeforeText() : "";
@@ -7010,6 +7011,10 @@ void App::renderWpmFeedback(uint32_t nowMs, bool resetTimer) {
 
 void App::renderStorageStatus(const char* title, const char* line1, const char* line2, int progressPercent) {
     applyReaderUiOrientation();
+    if (bootSplashActive_) {
+        display_.renderBootImage();  // boot-time indexing/estimate progress stays under the splash
+        return;
+    }
     display_.renderProgress(title == nullptr ? "SD" : title, line1 == nullptr ? "" : line1,
                             line2 == nullptr ? "" : line2, progressPercent);
 }
