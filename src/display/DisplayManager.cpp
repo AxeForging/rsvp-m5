@@ -264,7 +264,7 @@ bool shouldDrawInvertedGlyph(char c) {
 String readerChromeKey(const DisplayManager::ReaderChrome &chrome) {
   return String(chrome.showBattery ? 1 : 0) + String(chrome.showChapter ? 1 : 0) +
          String(chrome.showProgress ? 1 : 0) +
-         String(chrome.showPreviousSentenceHint ? 1 : 0);
+         String(chrome.showPreviousSentenceHint ? 1 : 0) + String(chrome.playing ? 1 : 0);
 }
 
 int baseGlyphHeightForTypeface(DisplayManager::ReaderTypeface typeface) {
@@ -1594,16 +1594,41 @@ void DisplayManager::drawBatteryBadge() {
   drawBatteryBadge(kDisplayWidth, kDisplayHeight);
 }
 
+// Battery outline + terminal nub + level fill, sized to sit next to the tiny percentage text.
+void DisplayManager::drawBatteryIcon(int x, int y, int w, int h, int fillPercent, uint16_t color) {
+  const int bodyW = w - 2;  // reserve 2px on the right for the terminal nub
+  fillVirtualRect(x, y, bodyW, 1, color);                 // top edge
+  fillVirtualRect(x, y + h - 1, bodyW, 1, color);         // bottom edge
+  fillVirtualRect(x, y, 1, h, color);                     // left edge
+  fillVirtualRect(x + bodyW - 1, y, 1, h, color);         // right edge
+  const int nubH = std::max(2, h / 2);
+  fillVirtualRect(x + bodyW, y + (h - nubH) / 2, 2, nubH, color);  // terminal nub
+  if (fillPercent > 0) {
+    const int innerW = bodyW - 4;
+    const int fw = std::max(1, (innerW * std::min(100, fillPercent)) / 100);
+    fillVirtualRect(x + 2, y + 2, fw, h - 4, color);      // level fill
+  }
+}
+
 void DisplayManager::drawBatteryBadge(int logicalWidth, int logicalHeight) {
   if (batteryLabel_.isEmpty()) {
     return;
   }
 
-  const int width = measureTinyTextWidth(batteryLabel_, kTinyScale);
-  const int x = std::max(kReaderBatteryMarginX, logicalWidth - kReaderBatteryMarginX - width);
+  // Battery label is "NN%" in percentage mode; use it for the icon fill, else draw a full icon.
+  const int fillPercent = batteryLabel_.endsWith("%") ? batteryLabel_.toInt() : 100;
+  const int textWidth = measureTinyTextWidth(batteryLabel_, kTinyScale);
+  const int iconW = 20;
+  const int iconH = 11;
+  const int gap = 4;
+  const int totalWidth = iconW + gap + textWidth;
+  const int startX =
+      std::max(kReaderBatteryMarginX, logicalWidth - kReaderBatteryMarginX - totalWidth);
   const int y = logicalHeight > (kDisplayHeight * 2) ? kReaderBatteryMarginTop + 8
                                                       : kReaderBatteryMarginTop;
-  drawTinyTextAt(batteryLabel_, x, y, footerColor(), kTinyScale);
+  const int textHeight = kTinyGlyphHeight * kTinyScale;
+  drawBatteryIcon(startX, y + (textHeight - iconH) / 2, iconW, iconH, fillPercent, footerColor());
+  drawTinyTextAt(batteryLabel_, startX + iconW + gap, y, footerColor(), kTinyScale);
 }
 
 // Left-pointing filled triangle: apex on the left edge, vertical base on the right.
@@ -1630,13 +1655,69 @@ void DisplayManager::drawDownArrow(int x, int y, int w, int h, uint16_t color) {
   }
 }
 
-void DisplayManager::drawPreviousSentenceHint() {
+// Right-pointing filled triangle (play): vertical base on the left, apex on the right.
+void DisplayManager::drawRightArrow(int x, int y, int w, int h, uint16_t color) {
+  const int mid = h / 2;
+  for (int ry = 0; ry <= h; ++ry) {
+    const int d = ry > mid ? ry - mid : mid - ry;
+    const int lineW = mid == 0 ? w : w - (w * d) / mid;  // taper toward top/bottom
+    if (lineW > 0) {
+      fillVirtualRect(x, y + ry, lineW, 1, color);
+    }
+  }
+}
+
+// Two vertical bars (pause).
+void DisplayManager::drawPauseIcon(int x, int y, int w, int h, uint16_t color) {
+  const int barW = std::max(1, (w * 2) / 5);
+  fillVirtualRect(x, y, barW, h, color);
+  fillVirtualRect(x + w - barW, y, barW, h, color);
+}
+
+void DisplayManager::drawPreviousSentenceHint(bool playing) {
   const uint16_t color = footerColor();
   // Top-left: re-read the current sentence/paragraph.
-  drawLeftArrow(kReaderChromeMarginX, kReaderChromeMarginTop, 11, 14, color);
-  // Top-centre: swipe down from the top edge for the menu.
+  const int leftArrowW = 11;
+  drawLeftArrow(kReaderChromeMarginX, kReaderChromeMarginTop, leftArrowW, 14, color);
+  // Top-centre: swipe down from the top edge for the menu. Centre it in the gap between the
+  // left arrow and the (wide) battery badge so both sides breathe equally, not on the raw
+  // screen centre -- the battery badge pushes the right side in.
   const int downW = 15;
-  drawDownArrow((kDisplayWidth - downW) / 2, kReaderChromeMarginTop + 1, downW, 9, color);
+  int batteryWidth = 0;
+  if (!batteryLabel_.isEmpty()) {
+    batteryWidth = 20 /*iconW*/ + 4 /*gap*/ + measureTinyTextWidth(batteryLabel_, kTinyScale);
+  }
+  const int leftEdge = kReaderChromeMarginX + leftArrowW;
+  const int rightEdge = kDisplayWidth - kReaderBatteryMarginX - batteryWidth;
+  const int downX = leftEdge + ((rightEdge - leftEdge) - downW) / 2;
+  drawDownArrow(downX, kReaderChromeMarginTop + 1, downW, 9, color);
+  // Top-right, row below the battery: playback state (arrow = playing, bars = paused).
+  const int pw = 12;
+  const int ph = 14;
+  const int px = kDisplayWidth - kReaderChromeMarginX - pw;
+  const int py = kReaderChromeMarginTop + kTinyGlyphHeight * kTinyScale + 4;
+  if (playing) {
+    drawRightArrow(px, py, pw, ph, color);
+  } else {
+    drawPauseIcon(px, py, pw, ph, color);
+  }
+}
+
+// Small open-book glyph (outline + centre spine + page lines) for the reading-progress readout.
+void DisplayManager::drawBookIcon(int x, int y, int w, int h, uint16_t color) {
+  fillVirtualRect(x, y, w, 1, color);              // top
+  fillVirtualRect(x, y + h - 1, w, 1, color);      // bottom
+  fillVirtualRect(x, y, 1, h, color);              // left
+  fillVirtualRect(x + w - 1, y, 1, h, color);      // right
+  fillVirtualRect(x + w / 2, y, 1, h, color);      // centre spine (two pages)
+  const int pageW = w / 2 - 4;
+  if (pageW > 0) {
+    for (int i = 0; i < 2; ++i) {                  // a couple of "text lines" per page
+      const int ly = y + 3 + i * 3;
+      fillVirtualRect(x + 2, ly, pageW, 1, color);
+      fillVirtualRect(x + w / 2 + 2, ly, pageW, 1, color);
+    }
+  }
 }
 
 void DisplayManager::drawFooter(const String &chapterLabel, const String &statusLabel,
@@ -1651,10 +1732,15 @@ void DisplayManager::drawFooter(const String &chapterLabel, const String &status
   if (chrome.showProgress) {
     const String status = statusLabel.isEmpty() ? "0%" : statusLabel;
     const int statusWidth = measureTinyTextWidth(status, kTinyScale);
-    const int rightX =
-        std::max(kReaderChromeMarginX, kDisplayWidth - kReaderChromeMarginX - statusWidth);
-    maxChapterWidth = std::max(0, rightX - kReaderChromeMarginX - 18);
-    drawTinyTextAt(status, rightX, y, footerColor(), kTinyScale);
+    const int iconW = 15;
+    const int iconH = 11;
+    const int gap = 4;
+    const int startX = std::max(kReaderChromeMarginX,
+                                kDisplayWidth - kReaderChromeMarginX - iconW - gap - statusWidth);
+    const int textHeight = kTinyGlyphHeight * kTinyScale;
+    maxChapterWidth = std::max(0, startX - kReaderChromeMarginX - 18);
+    drawBookIcon(startX, y + (textHeight - iconH) / 2, iconW, iconH, footerColor());
+    drawTinyTextAt(status, startX + iconW + gap, y, footerColor(), kTinyScale);
   }
 
   if (chrome.showChapter) {
@@ -1937,7 +2023,7 @@ void DisplayManager::renderRsvpWord(const String &word, const String &chapterLab
                chrome);
   }
   if (chrome.showPreviousSentenceHint) {
-    drawPreviousSentenceHint();
+    drawPreviousSentenceHint(chrome.playing);
   }
   if (chrome.showBattery) {
     drawBatteryBadge(virtualWidth, virtualHeight);
@@ -1982,7 +2068,7 @@ void DisplayManager::renderRsvpWordWithWpm(const String &word, uint16_t wpm,
                chrome);
   }
   if (chrome.showPreviousSentenceHint) {
-    drawPreviousSentenceHint();
+    drawPreviousSentenceHint(chrome.playing);
   }
   if (chrome.showBattery) {
     drawBatteryBadge();
@@ -2040,7 +2126,7 @@ void DisplayManager::renderPhantomRsvpWord(const String &beforeText, const Strin
                  chrome);
     }
     if (chrome.showPreviousSentenceHint) {
-      drawPreviousSentenceHint();
+      drawPreviousSentenceHint(chrome.playing);
     }
     if (chrome.showBattery) {
       drawBatteryBadge();
@@ -2085,7 +2171,7 @@ void DisplayManager::renderPhantomRsvpWord(const String &beforeText, const Strin
                chrome);
   }
   if (chrome.showPreviousSentenceHint) {
-    drawPreviousSentenceHint();
+    drawPreviousSentenceHint(chrome.playing);
   }
   if (chrome.showBattery) {
     drawBatteryBadge();
@@ -2222,7 +2308,7 @@ void DisplayManager::renderWordTickerView(const std::vector<ContextWord> &words,
       drawFooter(chapterLabel, String(progressPercent) + "%", chrome);
     }
     if (chrome.showPreviousSentenceHint) {
-      drawPreviousSentenceHint();
+      drawPreviousSentenceHint(chrome.playing);
     }
     if (!canUseBandOnly) {
       if (chrome.showBattery) {
@@ -2308,7 +2394,7 @@ void DisplayManager::renderWordTickerView(const std::vector<ContextWord> &words,
     drawFooter(chapterLabel, String(progressPercent) + "%", chrome);
   }
   if (chrome.showPreviousSentenceHint) {
-    drawPreviousSentenceHint();
+    drawPreviousSentenceHint(chrome.playing);
   }
   if (!canUseBandOnly) {
     if (chrome.showBattery) {
@@ -2479,7 +2565,7 @@ void DisplayManager::renderPhantomRsvpWordWithWpm(const String &beforeText, cons
                  chrome);
     }
     if (chrome.showPreviousSentenceHint) {
-      drawPreviousSentenceHint();
+      drawPreviousSentenceHint(chrome.playing);
     }
     if (chrome.showBattery) {
       drawBatteryBadge();
@@ -2527,7 +2613,7 @@ void DisplayManager::renderPhantomRsvpWordWithWpm(const String &beforeText, cons
                chrome);
   }
   if (chrome.showPreviousSentenceHint) {
-    drawPreviousSentenceHint();
+    drawPreviousSentenceHint(chrome.playing);
   }
   if (chrome.showBattery) {
     drawBatteryBadge();
@@ -2712,7 +2798,7 @@ void DisplayManager::renderScrollView(const std::vector<ContextWord> &words, uin
                                                        : footerStatusLabel,
              chrome);
   if (chrome.showPreviousSentenceHint) {
-    drawPreviousSentenceHint();
+    drawPreviousSentenceHint(chrome.playing);
   }
   if (chrome.showBattery) {
     drawBatteryBadge();

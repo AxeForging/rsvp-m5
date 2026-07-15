@@ -1861,6 +1861,7 @@ DisplayManager::ReaderChrome App::readerChrome() const {
     chrome.showChapter = !reading || readerChapterVisibleWhilePlaying_;
     chrome.showProgress = !reading || readerProgressVisibleWhilePlaying_;
     chrome.showPreviousSentenceHint = !contextViewVisible_ || scrollModeEnabled();
+    chrome.playing = reading;
     return chrome;
 }
 

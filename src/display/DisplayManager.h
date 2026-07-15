@@ -33,12 +33,14 @@ class DisplayManager {
         : showBattery(true),
           showChapter(true),
           showProgress(true),
-          showPreviousSentenceHint(true) {}
+          showPreviousSentenceHint(true),
+          playing(false) {}
 
     bool showBattery;
     bool showChapter;
     bool showProgress;
     bool showPreviousSentenceHint;
+    bool playing;  // drives the top-right play/pause glyph
   };
 
   struct LibraryItem {
@@ -172,9 +174,13 @@ class DisplayManager {
                                    int width, int xOffset);
   void drawBatteryBadge();
   void drawBatteryBadge(int logicalWidth, int logicalHeight);
-  void drawPreviousSentenceHint();
+  void drawBatteryIcon(int x, int y, int w, int h, int fillPercent, uint16_t color);
+  void drawBookIcon(int x, int y, int w, int h, uint16_t color);
+  void drawPreviousSentenceHint(bool playing);
   void drawLeftArrow(int x, int y, int w, int h, uint16_t color);
   void drawDownArrow(int x, int y, int w, int h, uint16_t color);
+  void drawRightArrow(int x, int y, int w, int h, uint16_t color);
+  void drawPauseIcon(int x, int y, int w, int h, uint16_t color);
   void drawFooter(const String &chapterLabel, const String &statusLabel,
                   const ReaderChrome &chrome);
   void drawRsvpAnchorGuide(int anchorX, int textY, int textHeight);
