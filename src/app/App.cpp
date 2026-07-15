@@ -2029,14 +2029,6 @@ void App::finalizeReaderPause(uint32_t nowMs) {
 
 void App::applyPausedTouchGesture(const TouchEvent& event, uint32_t nowMs) {
     const bool ended = Input::isTouchReleaseGesture(event.gesture);
-    if (ended && touchPlayHeld_) {
-        resetReaderTapTracking();
-        pausedTouch_.active = false;
-        pausedTouchIntent_ = TouchIntent::None;
-        touchPlayHeld_ = false;
-        requestReaderPauseAtSentenceEnd(nowMs);
-        return;
-    }
 
     if (event.gesture == Input::Gesture::TouchStart) {
         pausedTouch_.active = true;
@@ -2080,52 +2072,16 @@ void App::applyPausedTouchGesture(const TouchEvent& event, uint32_t nowMs) {
         return;
     }
 
+    // A quick tap anywhere toggles play/pause (mirrors the centre button), so a mis-hit on the
+    // glass instead of the capacitive button still works. No corner cyclers, no double-tap.
     if (state_ == AppState::Playing) {
-        if (Board::Config::TOUCH_READER_PLAYBACK_ENABLED && tapLike && pressDurationMs >= kTouchPlayHoldMs) {
-            resetReaderTapTracking();
-            pausedTouch_.active = false;
-            pausedTouchIntent_ = TouchIntent::None;
-            requestReaderPauseAtSentenceEnd(nowMs);
-            Serial.println("[touch] reader hold pause");
-            return;
-        }
-
         if (ended) {
             pausedTouch_.active = false;
             pausedTouchIntent_ = TouchIntent::None;
-            if (tapLike) {
-                if (handleBatteryBadgeTap(event.x, event.y, nowMs)) {
-                    return;
-                }
-                if (handleFooterMetricTap(event.x, event.y, nowMs)) {
-                    return;
-                }
-                if (handlePreviousSentenceTap(event.x, event.y, nowMs)) {
-                    return;
-                }
-                if (Board::Config::TOUCH_READER_PLAYBACK_ENABLED && Board::Config::READER_SINGLE_TAP_PAUSES_WHILE_LOCKED
-                    && (playLocked_ || pauseAtSentenceEndRequested_)) {
-                    resetReaderTapTracking();
-                    requestReaderPauseAtSentenceEnd(nowMs);
-                } else if (Board::Config::TOUCH_READER_PLAYBACK_ENABLED) {
-                    handleReaderTap(event.x, event.y, nowMs);
-                } else {
-                    resetReaderTapTracking();
-                }
-            } else {
-                resetReaderTapTracking();
+            if (tapLike && Board::Config::TOUCH_READER_PLAYBACK_ENABLED) {
+                toggleReaderPlaybackFromShortcut(nowMs);
             }
         }
-        return;
-    }
-
-    if (Board::Config::TOUCH_READER_PLAYBACK_ENABLED && !previewBrowseMode && !ended
-        && pausedTouchIntent_ == TouchIntent::None && pressDurationMs >= kTouchPlayHoldMs && tapLike) {
-        resetReaderTapTracking();
-        touchPlayHeld_ = true;
-        pausedTouchIntent_ = TouchIntent::PlayHold;
-        wpmFeedbackVisible_ = false;
-        setState(AppState::Playing, nowMs);
         return;
     }
 
@@ -2137,11 +2093,8 @@ void App::applyPausedTouchGesture(const TouchEvent& event, uint32_t nowMs) {
                    && absDeltaY > absDeltaX + static_cast<int>(kAxisBiasPx)) {
             resetReaderTapTracking();
             pausedTouchIntent_ = TouchIntent::BrowseScroll;
-        } else if (!previewBrowseMode && absDeltaY >= static_cast<int>(kSwipeThresholdPx)
-                   && absDeltaY > absDeltaX + static_cast<int>(kAxisBiasPx)) {
-            resetReaderTapTracking();
-            pausedTouchIntent_ = TouchIntent::Wpm;
         }
+        // Vertical swipe no longer changes WPM -- speed lives on the left/right buttons.
     }
 
     if (pausedTouchIntent_ == TouchIntent::Scrub) {
@@ -2164,37 +2117,15 @@ void App::applyPausedTouchGesture(const TouchEvent& event, uint32_t nowMs) {
         return;
     }
 
-    if (pausedTouchIntent_ == TouchIntent::Wpm) {
-        if (!ended) {
-            return;
-        }
-
-        adjustReaderWpm((deltaY < 0) ? 1 : -1, nowMs);
-        pausedTouch_.active = false;
-        pausedTouchIntent_ = TouchIntent::None;
-        return;
-    }
-
     if (ended) {
         pausedTouch_.active = false;
         pausedTouchIntent_ = TouchIntent::None;
-        if (tapLike && handleBatteryBadgeTap(event.x, event.y, nowMs)) {
-            return;
-        }
-        if (tapLike && handleFooterMetricTap(event.x, event.y, nowMs)) {
-            return;
-        }
-        if (tapLike && handlePreviousSentenceTap(event.x, event.y, nowMs)) {
-            return;
-        }
         if (tapLike && previewBrowseMode) {
-            resetReaderTapTracking();
             contextViewVisible_ = false;
             renderActiveReader(nowMs);
         } else if (tapLike && Board::Config::TOUCH_READER_PLAYBACK_ENABLED) {
-            handleReaderTap(event.x, event.y, nowMs);
-        } else {
-            resetReaderTapTracking();
+            // Quick tap anywhere plays (mirrors the centre button). No corner cyclers, no double-tap.
+            toggleReaderPlaybackFromShortcut(nowMs);
         }
     }
 }

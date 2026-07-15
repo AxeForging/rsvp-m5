@@ -9,7 +9,9 @@ constexpr const char *BOARD_LABEL = "M5Stack Core2";
 constexpr const char *OTA_ASSET_NAME = "rsvp-m5-core2-ota.bin";
 
 constexpr bool ENABLE_TOP_EDGE_MENU_SWIPE = true;
-constexpr bool ENABLE_BOTTOM_EDGE_QUICK_SETTINGS_SWIPE = true;
+// Reader touch is deliberately minimal: tap = play/pause, top-swipe = menu, horizontal
+// swipe = scrub. No bottom-edge quick-settings swipe.
+constexpr bool ENABLE_BOTTOM_EDGE_QUICK_SETTINGS_SWIPE = false;
 constexpr bool READER_SINGLE_TAP_PAUSES_WHILE_LOCKED = true;
 constexpr bool TOUCH_READER_PLAYBACK_ENABLED = true;
 constexpr bool ENABLE_RESTRUCTURED_MENU = true;
