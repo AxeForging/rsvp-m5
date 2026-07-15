@@ -65,7 +65,13 @@ bool touchReady() { return true; }
 
 bool readTouch(::Input::TouchContact &contact) {
   // M5.update() already ran in currentControls() this poll cycle (poll() calls it first).
-  if (M5.Touch.getCount() == 0) {
+  // The Core2's 3 buttons are capacitive pads on the SAME touch panel, just below the
+  // screen. A button press therefore also reports as a touch -- if we let it through, the
+  // reader's tap-to-play/pause fires at the same time as the button's WPM change. Buttons
+  // and screen taps are mutually exclusive here, so when any button is down the contact
+  // belongs to it: report no screen touch and let currentControls() handle the button.
+  if (M5.Touch.getCount() == 0 || M5.BtnA.isPressed() || M5.BtnB.isPressed() ||
+      M5.BtnC.isPressed()) {
     contact = {false, 0, 0};
     return true;
   }
