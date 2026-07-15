@@ -1606,8 +1606,37 @@ void DisplayManager::drawBatteryBadge(int logicalWidth, int logicalHeight) {
   drawTinyTextAt(batteryLabel_, x, y, footerColor(), kTinyScale);
 }
 
+// Left-pointing filled triangle: apex on the left edge, vertical base on the right.
+void DisplayManager::drawLeftArrow(int x, int y, int w, int h, uint16_t color) {
+  const int mid = h / 2;
+  for (int ry = 0; ry <= h; ++ry) {
+    const int d = ry > mid ? ry - mid : mid - ry;
+    const int leftX = x + (mid == 0 ? 0 : (w * d) / mid);  // taper toward top/bottom
+    const int lineW = (x + w) - leftX;
+    if (lineW > 0) {
+      fillVirtualRect(leftX, y + ry, lineW, 1, color);
+    }
+  }
+}
+
+// Down-pointing filled triangle: horizontal base on top, apex at bottom-centre.
+void DisplayManager::drawDownArrow(int x, int y, int w, int h, uint16_t color) {
+  for (int ry = 0; ry <= h; ++ry) {
+    const int inset = h == 0 ? 0 : (w * ry) / (2 * h);  // narrow toward the bottom
+    const int lineW = w - 2 * inset;
+    if (lineW > 0) {
+      fillVirtualRect(x + inset, y + ry, lineW, 1, color);
+    }
+  }
+}
+
 void DisplayManager::drawPreviousSentenceHint() {
-  drawTinyTextAt("<<", kReaderChromeMarginX, kReaderChromeMarginTop, footerColor(), kTinyScale);
+  const uint16_t color = footerColor();
+  // Top-left: re-read the current sentence/paragraph.
+  drawLeftArrow(kReaderChromeMarginX, kReaderChromeMarginTop, 11, 14, color);
+  // Top-centre: swipe down from the top edge for the menu.
+  const int downW = 15;
+  drawDownArrow((kDisplayWidth - downW) / 2, kReaderChromeMarginTop + 1, downW, 9, color);
 }
 
 void DisplayManager::drawFooter(const String &chapterLabel, const String &statusLabel,

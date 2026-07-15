@@ -24,10 +24,11 @@ constexpr int PANEL_NATIVE_WIDTH = 320;
 constexpr int PANEL_NATIVE_HEIGHT = 240;
 constexpr int DISPLAY_WIDTH = 320;
 constexpr int DISPLAY_HEIGHT = 240;
-constexpr int READER_CHROME_MARGIN_X = 28;
-constexpr int READER_CHROME_MARGIN_TOP = 14;
-constexpr int READER_CHROME_MARGIN_BOTTOM = 14;
-constexpr int READER_BATTERY_MARGIN_X = 48;
-constexpr int READER_BATTERY_MARGIN_TOP = 24;
+// Reader indicators sit flush in the four corners to free the middle of the screen.
+constexpr int READER_CHROME_MARGIN_X = 8;
+constexpr int READER_CHROME_MARGIN_TOP = 8;
+constexpr int READER_CHROME_MARGIN_BOTTOM = 8;
+constexpr int READER_BATTERY_MARGIN_X = 8;
+constexpr int READER_BATTERY_MARGIN_TOP = 8;
 
 }  // namespace Board::Config

@@ -173,6 +173,8 @@ class DisplayManager {
   void drawBatteryBadge();
   void drawBatteryBadge(int logicalWidth, int logicalHeight);
   void drawPreviousSentenceHint();
+  void drawLeftArrow(int x, int y, int w, int h, uint16_t color);
+  void drawDownArrow(int x, int y, int w, int h, uint16_t color);
   void drawFooter(const String &chapterLabel, const String &statusLabel,
                   const ReaderChrome &chrome);
   void drawRsvpAnchorGuide(int anchorX, int textY, int textHeight);
