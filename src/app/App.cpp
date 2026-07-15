@@ -180,6 +180,12 @@ namespace {
         UpdateConfirmItemCount,
     };
 
+    enum SyncWifiPromptItem : size_t {
+        SyncWifiPromptSetUp,
+        SyncWifiPromptHotspot,
+        SyncWifiPromptItemCount,
+    };
+
     enum QuickSettingsItem : size_t {
         QuickSettingsBrightness,
         QuickSettingsTheme,
@@ -199,6 +205,7 @@ namespace {
     constexpr size_t kRestartConfirmHeaderRows = 1;
     constexpr size_t kSdCardRepairConfirmHeaderRows = 1;
     constexpr size_t kUpdateConfirmHeaderRows = 2;
+    constexpr size_t kSyncWifiPromptHeaderRows = 2;
     constexpr size_t kSettingsBackIndex = 0;
     constexpr size_t kSettingsHomePacingIndex = 1;
     constexpr size_t kSettingsHomeDisplayIndex = 2;
@@ -2562,6 +2569,9 @@ void App::moveMenuSelection(int direction) {
     } else if (menuScreen_ == MenuScreen::UpdateConfirm) {
         selectedIndex = &updateConfirmSelectedIndex_;
         itemCount = UpdateConfirmItemCount;
+    } else if (menuScreen_ == MenuScreen::SyncWifiPrompt) {
+        selectedIndex = &syncWifiPromptSelectedIndex_;
+        itemCount = SyncWifiPromptItemCount;
     } else if (menuScreen_ == MenuScreen::QuickSettings) {
         selectedIndex = &quickSettingsSelectedIndex_;
         itemCount = QuickSettingsItemCount;
@@ -2630,6 +2640,10 @@ void App::moveMenuSelection(int direction) {
     } else if (menuScreen_ == MenuScreen::UpdateConfirm) {
         const String selectedLabel = updateConfirmSelectedIndex_ == UpdateConfirmUpdate ? "Update" : "Skip for now";
         Serial.printf("[ota] selected=%s\n", selectedLabel.c_str());
+    } else if (menuScreen_ == MenuScreen::SyncWifiPrompt) {
+        const String selectedLabel =
+            syncWifiPromptSelectedIndex_ == SyncWifiPromptSetUp ? "Set up Wi-Fi" : "Start hotspot anyway";
+        Serial.printf("[sync] selected=%s\n", selectedLabel.c_str());
     } else if (menuScreen_ == MenuScreen::QuickSettings) {
         String selectedLabel = "Brightness";
         switch (quickSettingsSelectedIndex_) {
@@ -2761,6 +2775,10 @@ void App::selectMenuItem(uint32_t nowMs) {
     }
     if (menuScreen_ == MenuScreen::UpdateConfirm) {
         selectUpdateConfirmItem(nowMs);
+        return;
+    }
+    if (menuScreen_ == MenuScreen::SyncWifiPrompt) {
+        selectSyncWifiPromptItem(nowMs);
         return;
     }
     if (menuScreen_ == MenuScreen::QuickSettings) {
@@ -3500,6 +3518,12 @@ void App::scanWifiNetworks() {
     if (wifiNetworks_.empty()) {
         display_.renderStatus("Wi-Fi", "No networks found", "");
         delay(1200);
+        if (syncAfterWifiSetup_) {  // abandon first-run setup cleanly
+            syncAfterWifiSetup_ = false;
+            menuScreen_ = MenuScreen::Main;
+            renderMainMenu();
+            return;
+        }
         openWifiSettings();
         return;
     }
@@ -3539,9 +3563,13 @@ void App::renderWifiNetworks() {
 }
 
 void App::selectWifiNetworkItem(uint32_t nowMs) {
-    (void) nowMs;
-
     if (wifiNetworkSelectedIndex_ == kWifiNetworksBackIndex || wifiNetworkMenuItems_.size() <= 1) {
+        if (syncAfterWifiSetup_) {  // backing out of first-run setup: don't later auto-launch Sync
+            syncAfterWifiSetup_ = false;
+            menuScreen_ = MenuScreen::Main;
+            renderMainMenu();
+            return;
+        }
         openWifiSettings();
         return;
     }
@@ -3565,9 +3593,7 @@ void App::selectWifiNetworkItem(uint32_t nowMs) {
 
     preferences_.putString(kPrefWifiSsid, network.ssid);
     preferences_.putString(kPrefWifiPass, "");
-    display_.renderStatus("Wi-Fi", "Network saved", network.ssid);
-    delay(900);
-    openWifiSettings();
+    finishFirstRunOrWifiSettings(nowMs, network.ssid);
 }
 
 void App::openTextEntry(TextEntryPurpose purpose, const String& title, const String& prompt, const String& helperText,
@@ -3777,8 +3803,6 @@ void App::activateTextEntryButton(size_t buttonIndex, uint32_t nowMs) {
 }
 
 void App::commitTextEntry(uint32_t nowMs) {
-    (void) nowMs;
-
     switch (textEntrySession_.purpose) {
     case TextEntryPurpose::WifiPassword: {
         if (textEntrySession_.value.isEmpty()) {
@@ -3793,9 +3817,7 @@ void App::commitTextEntry(uint32_t nowMs) {
         preferences_.putString(kPrefWifiPass, textEntrySession_.value);
         textEntrySession_ = TextEntrySession();
         textEntryButtons_.clear();
-        display_.renderStatus("Wi-Fi", "Network saved", ssid);
-        delay(900);
-        openWifiSettings();
+        finishFirstRunOrWifiSettings(nowMs, ssid);
         return;
     }
     case TextEntryPurpose::OtaOwner: {
@@ -4684,8 +4706,47 @@ void App::selectUpdateConfirmItem(uint32_t nowMs) {
     runFirmwareUpdate(preferredOtaConfig(), false, nowMs);
 }
 
-void App::enterCompanionSync(uint32_t nowMs) {
+void App::openSyncWifiPrompt(uint32_t nowMs) {
+    (void) nowMs;
+    syncWifiPromptSelectedIndex_ = SyncWifiPromptSetUp;
+    menuScreen_ = MenuScreen::SyncWifiPrompt;
+    renderSyncWifiPrompt();
+}
+
+void App::selectSyncWifiPromptItem(uint32_t nowMs) {
+    if (syncWifiPromptSelectedIndex_ == SyncWifiPromptSetUp) {
+        // Route into the existing on-device Wi-Fi setup (scan -> pick -> keyboard -> save); the
+        // flag makes the save site continue straight into Sync in station mode.
+        syncAfterWifiSetup_ = true;
+        scanWifiNetworks();
+        return;
+    }
+    syncAfterWifiSetup_ = false;
+    enterCompanionSync(nowMs, /*skipWifiPrompt=*/true);  // user opted for the hotspot fallback
+}
+
+void App::finishFirstRunOrWifiSettings(uint32_t nowMs, const String& ssid) {
+    display_.renderStatus("Wi-Fi", "Network saved", ssid);
+    delay(900);
+    if (syncAfterWifiSetup_) {
+        syncAfterWifiSetup_ = false;
+        enterCompanionSync(nowMs, /*skipWifiPrompt=*/true);  // creds saved -> straight into station Sync
+        return;
+    }
+    openWifiSettings();
+}
+
+void App::enterCompanionSync(uint32_t nowMs, bool skipWifiPrompt) {
     if (blockNetworkActionForOtaCheck("Sync", nowMs)) {
+        return;
+    }
+
+    // First run with no saved home Wi-Fi: Sync would self-host an open AP with no internet, which
+    // phones drop. Guide the user to set up home Wi-Fi first (station mode keeps their internet)
+    // rather than silently starting the flaky hotspot. Test the raw pref -- the same signal
+    // startStation() uses -- not configuredWifiSsid(), which also reads the OTA fallback.
+    if (!skipWifiPrompt && preferences_.getString(kPrefWifiSsid, "").isEmpty()) {
+        openSyncWifiPrompt(nowMs);
         return;
     }
 
@@ -5818,6 +5879,8 @@ void App::renderMenu() {
         renderSdCardRepairConfirm();
     } else if (menuScreen_ == MenuScreen::UpdateConfirm) {
         renderUpdateConfirm();
+    } else if (menuScreen_ == MenuScreen::SyncWifiPrompt) {
+        renderSyncWifiPrompt();
     } else if (menuScreen_ == MenuScreen::QuickSettings) {
         renderQuickSettings();
     } else if (menuScreen_ == MenuScreen::QuickSync) {
@@ -5950,6 +6013,17 @@ void App::renderUpdateConfirm() {
     items.push_back("Update");
 
     display_.renderMenu(items, updateConfirmSelectedIndex_ + kUpdateConfirmHeaderRows);
+}
+
+void App::renderSyncWifiPrompt() {
+    std::vector<String> items;
+    items.reserve(SyncWifiPromptItemCount + kSyncWifiPromptHeaderRows);
+    items.push_back("No Wi-Fi saved");
+    items.push_back("Phones drop the hotspot");
+    items.push_back("Set up Wi-Fi");
+    items.push_back("Start hotspot anyway");
+
+    display_.renderMenu(items, syncWifiPromptSelectedIndex_ + kSyncWifiPromptHeaderRows);
 }
 
 void App::renderQuickSettings() {

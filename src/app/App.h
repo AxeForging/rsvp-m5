@@ -96,6 +96,7 @@ private:
         RestartConfirm,
         SdCardRepairConfirm,
         UpdateConfirm,
+        SyncWifiPrompt,
         QuickSettings,
         QuickSync,
         FocusTimerGenres,
@@ -315,7 +316,10 @@ private:
     void runSdCardCheck(uint32_t nowMs);
     void openUpdateConfirm();
     void selectUpdateConfirmItem(uint32_t nowMs);
-    void enterCompanionSync(uint32_t nowMs);
+    void openSyncWifiPrompt(uint32_t nowMs);
+    void selectSyncWifiPromptItem(uint32_t nowMs);
+    void finishFirstRunOrWifiSettings(uint32_t nowMs, const String& ssid);
+    void enterCompanionSync(uint32_t nowMs, bool skipWifiPrompt = false);
     void updateCompanionSync(uint32_t nowMs);
     void exitCompanionSync(uint32_t nowMs);
     void enterUsbTransfer(uint32_t nowMs);
@@ -378,6 +382,7 @@ private:
     void renderRestartConfirm();
     void renderSdCardRepairConfirm();
     void renderUpdateConfirm();
+    void renderSyncWifiPrompt();
     void renderQuickSettings();
     void renderQuickSync();
     void renderFocusTimerGenres();
@@ -495,6 +500,8 @@ private:
     size_t restartConfirmSelectedIndex_ = 0;
     size_t sdCardRepairConfirmSelectedIndex_ = 0;
     size_t updateConfirmSelectedIndex_ = 0;
+    size_t syncWifiPromptSelectedIndex_ = 0;
+    bool syncAfterWifiSetup_ = false;
     size_t quickSettingsSelectedIndex_ = 0;
     size_t quickSyncSelectedIndex_ = 0;
     size_t focusTimerGenreSelectedIndex_ = 0;
