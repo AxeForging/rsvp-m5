@@ -2045,6 +2045,18 @@ void App::applyPausedTouchGesture(const TouchEvent& event, uint32_t nowMs) {
         pausedTouch_.startWordIndex = reader_.currentIndex();
         pausedTouch_.gestureStepsApplied = 0;
         pausedTouch_.browseOffsetPermille = 0;
+
+        // While playing, pause the instant the finger lands rather than waiting for release +
+        // the ~40ms lift debounce -- stopping on a moving word has to feel immediate. Skip the
+        // top-edge zone so a downward menu swipe there is still disambiguated on release.
+        const bool inTopMenuZone = Board::Config::ENABLE_TOP_EDGE_MENU_SWIPE
+                                   && event.y <= kMenuSwipeTopZonePx;
+        if (state_ == AppState::Playing && !inTopMenuZone
+            && Board::Config::TOUCH_READER_PLAYBACK_ENABLED) {
+            pausedTouch_.active = false;  // consume this touch: ignore its release
+            pausedTouchIntent_ = TouchIntent::None;
+            toggleReaderPlaybackFromShortcut(nowMs);
+        }
         return;
     }
 
