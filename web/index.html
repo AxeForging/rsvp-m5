@@ -977,13 +977,34 @@
         background: var(--af-surface-2);
         overflow: hidden;
       }
+      /* The device marks the focus letter with two short ticks -- one above, one below --
+         not a line crossing the word. Draw them at the centre column, solid accent. */
       .rsvp-guide {
         position: absolute;
         top: 18px;
         bottom: 18px;
         left: 50%;
-        width: 1px;
-        background: color-mix(in srgb, var(--af-accent) 42%, transparent);
+        width: 3px;
+        transform: translateX(-50%);
+        background: transparent;
+        pointer-events: none;
+      }
+      .rsvp-guide::before,
+      .rsvp-guide::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        width: 3px;
+        height: 15px;
+        transform: translateX(-50%);
+        border-radius: 1.5px;
+        background: var(--af-accent);
+      }
+      .rsvp-guide::before {
+        top: 0;
+      }
+      .rsvp-guide::after {
+        bottom: 0;
       }
       .rsvp-word {
         display: grid;

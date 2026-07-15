@@ -137,6 +137,25 @@ class InstallFirmware extends HTMLElement {
             const ul = option.querySelector(".feature-list");
             ul.innerHTML = m.features.map(f => "<li>" + f + "</li>").join("");
           }
+          // esp-web-tools fetches the manifest (and the .bin it names) through the ordinary
+          // browser HTTP cache, so a visitor who flashed an earlier release gets served the
+          // STALE manifest/binary -- the confirm dialog and the firmware lag a release behind.
+          // Hand it our fresh (no-store) manifest as a blob, with absolute, version-keyed .bin
+          // URLs so both are re-fetched whenever the release changes.
+          try {
+            const manifestUrl = new URL(option.dataset.manifest, document.baseURI);
+            const fresh = JSON.parse(JSON.stringify(m));
+            (fresh.builds || []).forEach((b) => (b.parts || []).forEach((p) => {
+              const sep = p.path.indexOf("?") === -1 ? "?" : "&";
+              p.path = new URL(p.path, manifestUrl).href + sep + "v=" + encodeURIComponent(m.version);
+            }));
+            const blobUrl = URL.createObjectURL(
+              new Blob([JSON.stringify(fresh)], { type: "application/json" }));
+            const espButton = option.querySelector("esp-web-install-button");
+            if (espButton) espButton.setAttribute("manifest", blobUrl);
+          } catch (e) {
+            /* fall back to the static manifest attribute */
+          }
           this._refreshInstallOption(option);
           this._showFlashHistory();
         })
