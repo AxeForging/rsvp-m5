@@ -164,7 +164,7 @@
       /* Overview card: bare .card has no padding, so pad it to match the step cards
          (.section-body-inner uses 24px 28px) and give the kicker/title room to breathe. */
       #features-section {
-        padding: clamp(24px, 4vw, 30px);
+        padding: clamp(26px, 4vw, 32px) clamp(24px, 4vw, 30px) clamp(32px, 5vw, 44px);
       }
 
       #features-section .section-kicker {
@@ -1347,30 +1347,46 @@
           wordEl.innerHTML = renderWord(w);
         }
 
+        // Demo a few reading speeds so the header shows RSVP visibly speeding up.
+        var wpmEl = document.getElementById("rsvp-wpm");
+        var speeds = [240, 380, 520];
+        var perTier = Math.ceil(phrase.length / speeds.length);
+        function wpmForIndex(i) {
+          return speeds[Math.min(speeds.length - 1, Math.floor(i / perTier))];
+        }
+        function setWpm(v) {
+          if (wpmEl) wpmEl.textContent = v + " wpm";
+        }
+
         function start() {
           var reduce =
             window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
           if (!window.gsap || reduce) {
             var i = 0;
             setWord(phrase[0]);
+            setWpm(wpmForIndex(0));
             setInterval(function () {
               i = (i + 1) % phrase.length;
               setWord(phrase[i]);
+              setWpm(wpmForIndex(i));
             }, 280);
             return;
           }
           var tl = gsap.timeline({ repeat: -1 });
-          phrase.forEach(function (w) {
-            var letters = w.replace(/[^A-Za-z0-9]/g, "").length;
-            var hold = 0.1 + Math.min(0.16, letters * 0.016); // longer words linger, like the reader
+          phrase.forEach(function (w, idx) {
+            var wpm = wpmForIndex(idx);
+            var wordDur = 60 / wpm; // seconds per word at this speed
+            if (idx % perTier === 0) {
+              tl.call(setWpm, [wpm]); // announce each new speed tier
+            }
             tl.call(setWord, [w]);
             tl.fromTo(
               wordEl,
               { autoAlpha: 0, yPercent: 16 },
-              { autoAlpha: 1, yPercent: 0, duration: 0.1, ease: "power2.out" }
+              { autoAlpha: 1, yPercent: 0, duration: Math.min(0.09, wordDur * 0.35), ease: "power2.out" }
             );
-            tl.to(wordEl, { duration: hold });
-            tl.to(wordEl, { autoAlpha: 0.5, duration: 0.05 });
+            tl.to(wordEl, { duration: Math.max(0.02, wordDur * 0.5) }); // hold, scaled to the speed
+            tl.to(wordEl, { autoAlpha: 0.5, duration: Math.min(0.05, wordDur * 0.2) });
           });
         }
 
