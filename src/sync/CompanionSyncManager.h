@@ -45,6 +45,7 @@ class CompanionSyncManager {
   static void handleBookUploadStatic();
   static void handleNotFoundStatic();
 
+  bool startStation();
   bool startAccessPoint();
   bool startServer();
   void stopServer();

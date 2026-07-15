@@ -66,25 +66,30 @@ const char kWebCompanionHtml[] PROGMEM = R"HTML(<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RSVP M5 Companion</title>
 <style>
-:root{color-scheme:dark;--bg:#0c1110;--fg:#f5f1e8;--muted:#a7aaa0;--line:#2d3430;--card:#151b18;--accent:#78d5b1;--accentInk:#07110e;--accent2:#ff9b73;--soft:#1d2924}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top left,#18241f 0,#0c1110 38%);color:var(--fg);font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-header{position:sticky;top:0;z-index:2;background:rgba(12,17,16,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:14px 16px 10px}
+:root{color-scheme:dark;--bg:#05070a;--fg:#ffffff;--muted:#94a3b8;--line:#1a2233;--card:#0a0f1a;--surface2:#0d1117;--surface3:#161b22;--accent:#d3542f;--accentHover:#b8461f;--accentInk:#ffffff;--danger:#ff5f56;--accent2:#ff5f56;--soft:#0d1117;--radius:8px;--radiusLg:16px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:2;background:var(--card);border-bottom:1px solid var(--line);padding:14px 16px 10px}
+.brand{display:flex;align-items:center;gap:10px;margin:0 0 12px}.brand svg{flex:0 0 auto}.brand-name{font-size:1.15rem;font-weight:700;letter-spacing:-.01em}.brand-tag{display:block;font-size:.75rem;color:var(--muted);font-weight:500}
 h1{font-size:1.15rem;margin:0 0 10px}.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-button,.button{border:1px solid var(--line);border-radius:8px;background:#111714;color:var(--fg);padding:9px 11px;font:inherit}
-button.primary,.button.primary{background:var(--accent);border-color:var(--accent);color:var(--accentInk);font-weight:700}button.danger{color:var(--accent2)}
-.tabs button{white-space:nowrap;padding:8px 6px}.tabs button.active{background:var(--fg);color:var(--bg)}
+button,.button{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface3);color:var(--fg);padding:9px 11px;font:inherit;cursor:pointer}
+button:hover,.button:hover{border-color:var(--accent)}
+button.primary,.button.primary{background:var(--accent);border-color:var(--accent);color:var(--accentInk);font-weight:700}button.primary:hover{background:var(--accentHover)}button.danger{color:var(--danger)}
+.tabs button{white-space:nowrap;padding:8px 6px}.tabs button.active{background:var(--surface3);border-color:var(--accent);color:var(--fg);font-weight:600}
 main{max-width:980px;margin:0 auto;padding:16px}.page{display:none}.page.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
-h2{font-size:1.05rem;margin:0 0 10px}h3{font-size:.95rem;margin:0 0 8px}.muted{color:var(--muted)}.status{padding:10px 12px;border-radius:8px;background:var(--soft);margin-bottom:12px}
-label{display:block;font-weight:650;margin:10px 0 5px}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit;padding:9px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radiusLg);padding:14px;margin-bottom:12px}
+h2{font-size:1.05rem;margin:0 0 10px}h3{font-size:.95rem;margin:0 0 8px}.muted{color:var(--muted)}.status{padding:10px 12px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--line);margin-bottom:12px}
+label{display:block;font-weight:600;margin:10px 0 5px}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface2);color:var(--fg);font:inherit;padding:9px}input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
 textarea{min-height:180px;resize:vertical}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row button{flex:0 0 auto}
 .item{border-top:1px solid var(--line);padding:10px 0}.item:first-child{border-top:0}.item-title{font-weight:700}.item-meta{color:var(--muted);font-size:.9rem}
-ul{padding-left:20px}code{background:var(--soft);border-radius:4px;padding:1px 4px}
+ul{padding-left:20px}code{background:var(--surface3);border-radius:6px;padding:1px 5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 </style>
 </head>
 <body>
 <header>
-<h1>RSVP M5 Companion</h1>
+<div class="brand">
+<svg viewBox="0 0 32 32" width="26" height="26" role="img" aria-label="AxeForge"><path d="M16 5V25" stroke="#fff" stroke-width="3.4"/><path fill="#d3542f" d="M16 10 7 4a8.5 8.5 0 0 0 0 12z"/><path fill="#d3542f" d="M16 10 25 4a8.5 8.5 0 0 1 0 12z"/><rect x="14.3" y="26.5" width="3.4" height="3.4" fill="#d3542f"/></svg>
+<span><span class="brand-name">RSVP M5</span><span class="brand-tag">Companion &middot; AxeForge</span></span>
+</div>
 <nav class="tabs">
 <button data-tab="books" class="active">Books</button>
 <button data-tab="articles">Articles</button>
@@ -157,7 +162,7 @@ ul{padding-left:20px}code{background:var(--soft);border-radius:4px;padding:1px 4
 <label><input id="phantomWords" type="checkbox" style="width:auto"> Phantom words</label>
 </div>
 <div class="card"><h2>Home Wi-Fi</h2>
-<p class="muted">Save Wi-Fi here for RSS and OTA. The reader does not send the saved password back to this page.</p>
+<p class="muted">Save your home network here. Next time you start Sync the reader joins it directly, so your phone keeps its internet and reaches this page over the LAN &mdash; also used for RSS and OTA. The reader does not send the saved password back to this page.</p>
 <label>SSID</label><input id="wifiSsid" autocomplete="off" placeholder="Network name">
 <label>Password</label><input id="wifiPassword" type="password" autocomplete="new-password" placeholder="Leave blank for open networks">
 <div class="row"><button class="primary" id="saveWifiButton">Save Wi-Fi</button><button class="danger" id="forgetWifiButton">Forget</button></div>
@@ -177,7 +182,8 @@ ul{padding-left:20px}code{background:var(--soft);border-radius:4px;padding:1px 4
 <section id="help" class="page">
 <div class="card"><h2>How to use this web companion</h2>
 <ul>
-<li>Open Companion sync on the reader, join the <code>RSVP-M5</code> Wi-Fi network, then open this page.</li>
+<li><b>First time:</b> start Sync on the reader, join the <code>RSVP-M5</code> Wi-Fi network, open this page, then save your home Wi-Fi under Settings.</li>
+<li><b>After that:</b> the reader joins your home network automatically. Keep your phone on the same Wi-Fi and open the address shown on the reader screen (or <code>rsvp-m5.local</code>) &mdash; your phone keeps its internet the whole time.</li>
 <li>Use Books for prepared book files and Articles for article drafts, article uploads, and synced articles.</li>
 <li>For best book conversion, use the hosted web converter/flasher first. This page is the wireless upload and settings companion, not the full conversion engine.</li>
 <li><code>.txt</code> and <code>.epub</code> uploads are accepted, but EPUB conversion is handled on the device when opened.</li>
@@ -544,7 +550,13 @@ bool CompanionSyncManager::begin(const Config &config) {
   statusLine2_ = "Preparing Wi-Fi";
   preferences_.begin(kPrefsNamespace, false);
 
-  const bool networkReady = startAccessPoint();
+  // Station mode is the default: join saved home Wi-Fi so the phone keeps its internet and
+  // reaches the companion over the LAN (no captive portal). Falls back to a self-hosted AP
+  // when no creds are saved yet (first-run bootstrap) or the join fails.
+  bool networkReady = startStation();
+  if (!networkReady) {
+    networkReady = startAccessPoint();
+  }
   if (!networkReady) {
     statusLine1_ = "Wi-Fi failed";
     statusLine2_ = "";
@@ -675,6 +687,36 @@ void CompanionSyncManager::handleNotFoundStatic() {
   if (instance_ != nullptr) {
     instance_->handleNotFound();
   }
+}
+
+bool CompanionSyncManager::startStation() {
+  const String ssid = preferences_.getString(kPrefWifiSsid, "");
+  if (ssid.isEmpty()) {
+    return false;  // no home Wi-Fi saved yet -> bootstrap via AP
+  }
+  const String password = preferences_.getString(kPrefWifiPass, "");
+
+  statusLine1_ = "Joining Wi-Fi";
+  statusLine2_ = ssid;
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid.c_str(), password.c_str());
+
+  // ponytail: fixed 12s join budget, plenty for a home AP; user can retry from the reader.
+  const uint32_t deadlineMs = millis() + 12000;
+  while (WiFi.status() != WL_CONNECTED && millis() < deadlineMs) {
+    delay(150);
+  }
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.disconnect(true, false);
+    Serial.printf("[sync] station join failed ssid=%s\n", ssid.c_str());
+    return false;
+  }
+
+  networkMode_ = NetworkMode::Station;
+  networkSsid_ = ssid;
+  Serial.printf("[sync] station ssid=%s ip=%s\n", ssid.c_str(),
+                ipToString(WiFi.localIP()).c_str());
+  return true;
 }
 
 bool CompanionSyncManager::startAccessPoint() {
