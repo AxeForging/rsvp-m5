@@ -82,9 +82,36 @@ label{display:block;font-weight:600;margin:10px 0 5px}input,textarea,select{widt
 textarea{min-height:180px;resize:vertical}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row button{flex:0 0 auto}
 .item{border-top:1px solid var(--line);padding:10px 0}.item:first-child{border-top:0}.item-title{font-weight:700}.item-meta{color:var(--muted);font-size:.9rem}
 ul{padding-left:20px}code{background:var(--surface3);border-radius:6px;padding:1px 5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+[hidden]{display:none!important}
+.wizard{position:fixed;inset:0;z-index:5;background:var(--bg);overflow:auto;padding:24px 16px;display:flex;align-items:flex-start;justify-content:center}
+.wizard .card{max-width:460px;width:100%;margin-top:24px}
+.wizard h2{margin-top:0}
+.wizard ol{padding-left:20px;margin:0}.wizard li{margin:6px 0}
+.wizard .skip{display:inline-block;margin-top:14px;color:var(--muted);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer;font:inherit}
 </style>
 </head>
 <body>
+<div id="wizard" class="wizard" hidden>
+<div class="card">
+<div id="wizardForm">
+<h2>Connect your reader to Wi-Fi</h2>
+<p class="muted">Save your home Wi-Fi so the reader joins it next time &mdash; then your phone keeps its internet and this hotspot is no longer needed.</p>
+<label>Wi-Fi name (SSID)</label><input id="wizSsid" autocomplete="off" placeholder="Your home network">
+<label>Password</label><input id="wizPassword" type="password" autocomplete="new-password" placeholder="Leave blank for open networks">
+<div class="row"><button class="primary" id="wizSaveButton">Save Wi-Fi</button></div>
+<button class="skip" id="wizSkip">Skip &mdash; just upload over the hotspot</button>
+</div>
+<div id="wizardDone" hidden>
+<h2>Wi-Fi saved</h2>
+<p class="muted">Two quick steps to switch off the hotspot for good:</p>
+<ol>
+<li><strong>On the reader:</strong> exit Sync and start it again &mdash; it will join <span id="wizDoneSsid">your network</span>.</li>
+<li><strong>On your phone:</strong> reconnect to your home Wi-Fi, then open <code>http://rsvp-m5.local</code> (or the address shown on the reader).</li>
+</ol>
+<div class="row"><button class="primary" id="wizClose">Got it</button></div>
+</div>
+</div>
+</div>
 <header>
 <div class="brand">
 <svg viewBox="0 0 32 32" width="26" height="26" role="img" aria-label="AxeForge"><path d="M16 5V25" stroke="#fff" stroke-width="3.4"/><path fill="#d3542f" d="M16 10 7 4a8.5 8.5 0 0 0 0 12z"/><path fill="#d3542f" d="M16 10 25 4a8.5 8.5 0 0 1 0 12z"/><rect x="14.3" y="26.5" width="3.4" height="3.4" fill="#d3542f"/></svg>
@@ -219,13 +246,18 @@ async function saveSettings(){setVal('wpm',snapWpm(val('wpm')));const mode=val('
 async function loadWifi(){try{const w=await api('/api/wifi');$('wifiSsid').value=w.ssid||'';$('wifiPassword').value='';$('wifiCurrent').textContent=w.configured?'Saved network: '+w.ssid:'No home Wi-Fi saved.'}catch(e){status('Wi-Fi load failed: '+e.message)}}
 async function saveWifi(){const ssid=$('wifiSsid').value.trim();if(!ssid){status('Enter a Wi-Fi SSID first.');return}try{const w=await api('/api/wifi',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({ssid,password:$('wifiPassword').value})});$('wifiPassword').value='';$('wifiCurrent').textContent='Saved network: '+w.ssid;status('Wi-Fi saved for RSS and OTA.')}catch(e){status('Wi-Fi save failed: '+e.message)}}
 async function forgetWifi(){if(!confirm('Forget saved Wi-Fi?'))return;try{await api('/api/wifi',{method:'DELETE'});$('wifiSsid').value='';$('wifiPassword').value='';$('wifiCurrent').textContent='No home Wi-Fi saved.';status('Wi-Fi credentials cleared.')}catch(e){status('Forget Wi-Fi failed: '+e.message)}}
+function showWizard(){$('wizard').hidden=false}
+function hideWizard(){$('wizard').hidden=true}
+async function wizardSave(){const ssid=$('wizSsid').value.trim();if(!ssid){status('Enter your Wi-Fi name first.');return}try{const w=await api('/api/wifi',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({ssid,password:$('wizPassword').value})});$('wizDoneSsid').textContent=w.ssid||ssid;$('wizardForm').hidden=true;$('wizardDone').hidden=false}catch(e){status('Wi-Fi save failed: '+e.message)}}
+async function checkFirstRun(){try{const w=await api('/api/wifi');if(!w.configured)showWizard()}catch(e){}}
 async function loadRss(){try{const r=await api('/api/rss-feeds');$('rssFeeds').value=(r.feeds||[]).join('\n');status('RSS feeds loaded.')}catch(e){status('RSS load failed: '+e.message)}}
 async function saveRss(){const feeds=$('rssFeeds').value.split(/\n+/).map(s=>s.trim()).filter(Boolean);try{await api('/api/rss-feeds',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({feeds})});status('RSS feeds saved.')}catch(e){status('RSS save failed: '+e.message)}}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button,.page').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active');if(b.dataset.tab==='settings'){loadSettings();loadWifi()}if(b.dataset.tab==='rss')loadRss()});
 $('wpm').oninput=()=>{setVal('wpm',snapWpm(val('wpm')));updateLabels()};
 ['longWordMs','complexWordMs','punctuationMs','brightnessIndex','fontSizeIndex','tracking','anchorPercent','guideWidth','guideGap'].forEach(id=>$(id).oninput=updateLabels);
 $('refreshBooksButton').onclick=refresh;$('refreshArticlesButton').onclick=refresh;$('uploadBookButton').onclick=()=>uploadPicked('bookFileInput','book');$('uploadArticleButton').onclick=()=>uploadPicked('articleFileInput','article');$('syncArticleButton').onclick=syncArticle;$('saveDraftButton').onclick=saveDraft;$('saveSettingsButton').onclick=saveSettings;$('saveWifiButton').onclick=saveWifi;$('forgetWifiButton').onclick=forgetWifi;$('saveRssButton').onclick=saveRss;$('reloadRssButton').onclick=loadRss;
-loadDraft();refresh();
+$('wizSaveButton').onclick=wizardSave;$('wizSkip').onclick=hideWizard;$('wizClose').onclick=hideWizard;
+loadDraft();refresh();checkFirstRun();
 </script>
 </body>
 </html>)HTML";
