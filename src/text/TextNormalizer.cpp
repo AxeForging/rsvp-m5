@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "text/AsciiText.h"
+#include "text/CjkText.h"
 #include "text/LatinText.h"
 
 namespace RsvpText {
@@ -539,6 +540,11 @@ void appendDisplayApproximation(String &target, uint32_t codepoint) {
     target += "st";
     return;
   default:
+    // CJK scripts render natively (M5GFX bundled fonts), so preserve the codepoint as UTF-8 instead
+    // of dropping it. Everything else with no Latin approximation is still dropped.
+    if (CjkText::isCjkCodepoint(codepoint)) {
+      CjkText::appendUtf8(target, codepoint);
+    }
     return;
   }
 }

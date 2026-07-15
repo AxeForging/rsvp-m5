@@ -48,7 +48,10 @@ bool isEllipsisToken(const String &token) {
 } // namespace Detail
 
 bool isReadableTokenChar(char c) {
-  return LatinText::isWordCharacter(LatinText::byteValue(c));
+  const uint8_t value = LatinText::byteValue(c);
+  // After normalize, bytes >=0x80 are either single-byte Latin approximations or preserved CJK
+  // UTF-8 -- both are real, readable characters, so a CJK-only token is not treated as punctuation.
+  return value >= 0x80 || LatinText::isWordCharacter(value);
 }
 
 bool isRhythmToken(const String &token) { return Detail::isHyphenToken(token); }

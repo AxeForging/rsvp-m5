@@ -7,6 +7,7 @@
 #define RSVP_MAX_BOOK_WORDS 0
 #endif
 
+#include "text/CjkText.h"
 #include "text/TextNormalizer.h"
 
 namespace RsvpText {
@@ -105,6 +106,29 @@ bool appendNormalizedLineWords(const String &normalizedLine,
     }
 
     const char c = normalizedLine[i];
+
+    // CJK: each ideograph/kana/syllable is its own RSVP flash. normalize() preserves CJK as UTF-8
+    // (the only multibyte sequences that survive), so a lead byte here starts a CJK codepoint --
+    // decode it, emit it as a standalone one-character token, and skip past its bytes. Latin runs
+    // fall through to the whitespace/hyphen logic below unchanged.
+    if (static_cast<uint8_t>(c) >= 0xC0) {
+      size_t next = i;
+      uint32_t codepoint = 0;
+      if (CjkText::decodeUtf8At(normalizedLine, next, codepoint) &&
+          CjkText::isCjkCodepoint(codepoint)) {
+        if (!flushCurrent()) {
+          return false;
+        }
+        String cjkToken;
+        CjkText::appendUtf8(cjkToken, codepoint);
+        if (!finishToken(cjkToken)) {
+          return false;
+        }
+        i = next - 1;  // the loop's ++i lands on the byte after this codepoint
+        continue;
+      }
+    }
+
     if (Detail::isWordBoundary(c)) {
       if (!flushCurrent()) {
         return false;
