@@ -59,7 +59,9 @@ bool pushColors(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const u
 
 void drawJpeg(const uint8_t *data, size_t len) {
   // M5GFX decodes the baseline JPEG (TJpgDec) and blits it. The image is authored at the
-  // panel size, so it fills the screen from the origin in the current rotation.
+  // panel size, so it fills the screen from the origin in the current rotation. Clear to black
+  // first so any decode gap (or a smaller/transparent-origin image) shows on the panel bg.
+  M5.Display.fillScreen(0);  // black
   M5.Display.drawJpg(data, static_cast<uint32_t>(len), 0, 0, M5.Display.width(), M5.Display.height());
 }
 

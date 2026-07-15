@@ -813,8 +813,13 @@ void App::begin() {
     Serial.printf("[app] WPM=%u interval=%lu ms\n", reader_.wpm(),
                   static_cast<unsigned long>(reader_.wordIntervalMs()));
 
+    // state_ is already Booting (constructed that way), so setState() never fires its Booting
+    // render branch -- draw the splash explicitly here, and restart the splash window from now so
+    // it shows for the full kBootSplashMs regardless of how long SD/book/OTA init took above.
     state_ = AppState::Booting;
-    Serial.println("[app] READY splash active");
+    bootStartedMs_ = millis();
+    display_.renderBootImage();
+    Serial.println("[app] boot splash active");
 }
 
 void App::update(uint32_t nowMs) {

@@ -13,14 +13,27 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "boot.jpeg"
+SRC = ROOT / "axeforge-logo.png"
 OUT = ROOT / "src" / "display" / "EmbeddedBootImage.h"
 WIDTH, HEIGHT = 320, 240
 QUALITY = 88
 
 
+def load_on_black(path: Path) -> Image.Image:
+    """Load the source and flatten any transparency onto black (the panel is black),
+    so a transparent PNG splash matches the device background."""
+    img = Image.open(path)
+    if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+        rgba = img.convert("RGBA")
+        bg = Image.new("RGB", rgba.size, (0, 0, 0))
+        bg.paste(rgba, mask=rgba.split()[-1])
+        return bg
+    return img.convert("RGB")
+
+
 def main() -> int:
-    img = Image.open(SRC).convert("RGB").resize((WIDTH, HEIGHT), Image.LANCZOS)
+    # Source is exactly 4:3, matching the panel, so a straight resize does not distort.
+    img = load_on_black(SRC).resize((WIDTH, HEIGHT), Image.LANCZOS)
     buf = io.BytesIO()
     # baseline (non-progressive) is what the on-device TJpgDec decoder expects
     img.save(buf, format="JPEG", quality=QUALITY, optimize=True, progressive=False)
