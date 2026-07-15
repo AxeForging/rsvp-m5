@@ -2082,27 +2082,46 @@ void DisplayManager::renderRsvpWordWithWpm(const String &word, uint16_t wpm,
 
 namespace {
 
-constexpr int kCjkBaseFontPx = 24;  // efont native size
-constexpr int kCjkSizeScale = 2;    // drawn at 2x -> ~48px focus glyphs
+// efont is a 24px bitmap and its max size; scaling it up is nearest-neighbour and looks jagged, so
+// draw it at native size (crisp). 24px is smaller than the Latin word, but sharp and covers every
+// script uniformly -- larger CJK would need per-language vector/large fonts (JP-only in M5GFX).
+constexpr int kCjkBaseFontPx = 24;
+constexpr int kCjkSizeScale = 1;
 
-// Script-appropriate bundled font (gothic efont). Hangul -> KR; Han/kana/punctuation -> JA (Chinese
-// Han uses Japanese glyph forms for now; per-book CN/TW refinement is a follow-up).
-const lgfx::IFont *cjkFontFor(const String &utf8) {
+// Pick the gothic efont variant from the script of the surrounding text. A bare Han codepoint is
+// ambiguous (JP vs CN vs TW), so we disambiguate by context: kana present -> Japanese; Hangul ->
+// Korean; otherwise pure Han -> Simplified Chinese (the broadest Han coverage, which fixes the tofu
+// squares on Chinese-only characters). Pass before+word+after so the whole section agrees on a font.
+const lgfx::IFont *cjkFontForContext(const String &context) {
+  bool hasKana = false;
+  bool hasHangul = false;
+  bool hasHan = false;
   size_t i = 0;
   uint32_t cp = 0;
-  while (i < utf8.length()) {
+  while (i < context.length()) {
     const size_t before = i;
-    if (CjkText::decodeUtf8At(utf8, i, cp)) {
-      if ((cp >= 0x1100 && cp <= 0x11FF) || (cp >= 0x3130 && cp <= 0x318F) ||
-          (cp >= 0xA960 && cp <= 0xA97F) || (cp >= 0xAC00 && cp <= 0xD7FF)) {
-        return &m5gfx::fonts::efontKR_24;
-      }
-      if (CjkText::isCjkCodepoint(cp)) {
-        return &m5gfx::fonts::efontJA_24;
-      }
-    } else {
+    if (!CjkText::decodeUtf8At(context, i, cp)) {
       i = before + 1;
+      continue;
     }
+    if ((cp >= 0x3040 && cp <= 0x30FF) || (cp >= 0x31F0 && cp <= 0x31FF)) {
+      hasKana = true;
+    } else if ((cp >= 0x1100 && cp <= 0x11FF) || (cp >= 0x3130 && cp <= 0x318F) ||
+               (cp >= 0xA960 && cp <= 0xA97F) || (cp >= 0xAC00 && cp <= 0xD7FF)) {
+      hasHangul = true;
+    } else if ((cp >= 0x3400 && cp <= 0x4DBF) || (cp >= 0x4E00 && cp <= 0x9FFF) ||
+               (cp >= 0xF900 && cp <= 0xFAFF)) {
+      hasHan = true;
+    }
+  }
+  if (hasHangul) {
+    return &m5gfx::fonts::efontKR_24;
+  }
+  if (hasKana) {
+    return &m5gfx::fonts::efontJA_24;
+  }
+  if (hasHan) {
+    return &m5gfx::fonts::efontCN_24;
   }
   return &m5gfx::fonts::efontJA_24;
 }
@@ -2123,22 +2142,22 @@ bool isCjkText(const String &s) {
   return false;
 }
 
-// Measure `utf8` at the CJK draw size using the live display's font metrics.
-int cjkDisplayWidth(const String &utf8) {
+// Measure `utf8` in `font` at the CJK draw size using the live display's metrics.
+int cjkDisplayWidth(const lgfx::IFont *font, const String &utf8) {
   if (utf8.isEmpty()) {
     return 0;
   }
-  M5.Display.setFont(cjkFontFor(utf8));
+  M5.Display.setFont(font);
   M5.Display.setTextSize(kCjkSizeScale);
   return M5.Display.textWidth(utf8.c_str());
 }
 
-// Draw one CJK string at (x, yTop) in `color`, transparent background, at the CJK draw size.
-void drawCjkSegment(const String &utf8, int x, int yTop, uint16_t color) {
+// Draw one string at (x, yTop) in `font` and `color`, transparent background, at the CJK draw size.
+void drawCjkSegment(const lgfx::IFont *font, const String &utf8, int x, int yTop, uint16_t color) {
   if (utf8.isEmpty()) {
     return;
   }
-  M5.Display.setFont(cjkFontFor(utf8));
+  M5.Display.setFont(font);
   M5.Display.setTextSize(kCjkSizeScale);
   M5.Display.setTextColor(color);  // single-arg = transparent background
   M5.Display.drawString(utf8.c_str(), x, yTop);
@@ -2182,19 +2201,24 @@ void DisplayManager::renderCjkPhantom(const String &beforeText, const String &wo
   flushScaledFrame(1, kDisplayWidth, kDisplayHeight);
 
   // Overlay the glyphs directly. M5.Display takes normal RGB565 (converts internally) -- do NOT use
-  // the panel-swapped colours the frame buffer stores.
-  const int wFocus = cjkDisplayWidth(word);
+  // the panel-swapped colours the frame buffer stores. One font for the whole line (chosen from the
+  // combined script) keeps a section consistent. The focus is accent only when it is really CJK --
+  // a Latin word routed here (a section header next to CJK) stays white, not fully highlighted.
+  const lgfx::IFont *font = cjkFontForContext(beforeText + word + afterText);
+  const uint16_t focusCol = isCjkText(word) ? focusColor() : wordColor();
+  const int wFocus = cjkDisplayWidth(font, word);
   const int focusX = anchorX - wFocus / 2;  // centre the focus character on the anchor
   const uint16_t phantom = blendOverBackground(wordColor(), kPhantomAlphaMedium);
 
   M5.Display.startWrite();
   M5.Display.setTextDatum(m5gfx::textdatum_t::top_left);
   if (!beforeText.isEmpty()) {
-    drawCjkSegment(beforeText, focusX - gap - cjkDisplayWidth(beforeText), textY, phantom);
+    drawCjkSegment(font, beforeText, focusX - gap - cjkDisplayWidth(font, beforeText), textY,
+                   phantom);
   }
-  drawCjkSegment(word, focusX, textY, focusColor());
+  drawCjkSegment(font, word, focusX, textY, focusCol);
   if (!afterText.isEmpty()) {
-    drawCjkSegment(afterText, focusX + wFocus + gap, textY, phantom);
+    drawCjkSegment(font, afterText, focusX + wFocus + gap, textY, phantom);
   }
   M5.Display.endWrite();
 }
