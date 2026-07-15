@@ -22,12 +22,37 @@ namespace {
     constexpr uint64_t kBytesPerMegabyte = 1024ULL * 1024ULL;
 
 #ifdef RSVP_SEED_SAMPLE_BOOK
-    // One-shot: drop a bundled book onto a blank card so the reader has content.
-    void seedSampleBookIfMissing() {
-        const String path = String(StoragePaths::kBookFilesPath) + "/" + SeedBook::kFileName;
-        if (StorageFiles::fileExists(path)) {
+    // Version marker in /config (not scanned as a book) records which seed version was written, so
+    // an updated sampler overwrites the old one exactly once and a user deletion is not undone on
+    // every boot.
+    int readSeededVersion(const String& path) {
+        File file = Board::Storage::filesystem().open(path.c_str(), "r");
+        if (!file) {
+            return 0;
+        }
+        const String value = file.readString();
+        file.close();
+        return value.toInt();
+    }
+
+    void writeSeededVersion(const String& path, int version) {
+        File file = Board::Storage::filesystem().open(path.c_str(), "w");
+        if (!file) {
             return;
         }
+        file.print(version);
+        file.close();
+    }
+
+    // Drop the bundled language sampler onto the card so the reader has content out of the box.
+    // Writes once per kVersion: fresh cards and content updates get it, but once the user deletes it
+    // (kVersion unchanged) it stays gone.
+    void seedSampleBook() {
+        const String versionPath = String(StoragePaths::kConfigPath) + "/welcome.ver";
+        if (readSeededVersion(versionPath) >= SeedBook::kVersion) {
+            return;
+        }
+        const String path = String(StoragePaths::kBookFilesPath) + "/" + SeedBook::kFileName;
         File file = Board::Storage::filesystem().open(path.c_str(), "w");
         if (!file) {
             Serial.printf("[storage] seed: could not open %s\n", path.c_str());
@@ -35,7 +60,13 @@ namespace {
         }
         const size_t written = file.print(SeedBook::kText);
         file.close();
-        Serial.printf("[storage] seeded sample book (%u bytes) -> %s\n",
+        // Overwriting an older sampler: drop its stale index/progress sidecars so the reader
+        // rebuilds from the new content instead of showing the previous version.
+        Board::Storage::filesystem().remove(StoragePaths::indexedIndexPathFor(path));
+        Board::Storage::filesystem().remove(StoragePaths::indexedDataPathFor(path));
+        Board::Storage::filesystem().remove(StoragePaths::progressSidecarPathFor(path));
+        writeSeededVersion(versionPath, SeedBook::kVersion);
+        Serial.printf("[storage] seeded sampler v%d (%u bytes) -> %s\n", SeedBook::kVersion,
                       static_cast<unsigned>(written), path.c_str());
     }
 #endif
@@ -72,7 +103,7 @@ bool StorageManager::begin() {
         StorageFiles::ensureDirectory(StoragePaths::kArticleFilesPath);
         StorageFiles::ensureDirectory(StoragePaths::kConfigPath);
 #ifdef RSVP_SEED_SAMPLE_BOOK
-        seedSampleBookIfMissing();
+        seedSampleBook();
 #endif
         statusCallback_(statusContext_, "SD", "Scanning books", "EPUB converts on open", 10);
         refreshBookPaths(false);
