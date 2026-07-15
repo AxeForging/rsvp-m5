@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "reader/ReadingLoop.h"
 #include "text/CjkText.h"
 #include "text/RsvpTokenizer.h"
 #include "text/TextNormalizer.h"
@@ -99,6 +100,32 @@ void test_utf8_encode_decode_roundtrip() {
   TEST_ASSERT_EQUAL_UINT(3, index);
 }
 
+// A CJK character carries a whole morpheme, so it dwells a little longer than a bare interval.
+void test_cjk_char_dwells_longer_than_interval() {
+  ReadingLoop r;
+  r.setWpm(300);
+  r.setWords({String(kHi)}, 0);
+  TEST_ASSERT_GREATER_THAN_UINT32(r.wordIntervalMs(), r.currentWordDurationMs());
+}
+
+// Control: a single Latin character has no bonus and flashes at exactly the base interval.
+void test_latin_single_char_has_no_bonus() {
+  ReadingLoop r;
+  r.setWpm(300);
+  r.setWords({String("a")}, 0);
+  TEST_ASSERT_EQUAL_UINT32(r.wordIntervalMs(), r.currentWordDurationMs());
+}
+
+// The ideographic full stop 。 pauses like a sentence end and marks the sentence boundary.
+void test_cjk_full_stop_pauses_and_ends_sentence() {
+  const char *fullStop = "\xe3\x80\x82";  // 。 U+3002
+  ReadingLoop r;
+  r.setWpm(300);
+  r.setWords({String(fullStop)}, 0);
+  TEST_ASSERT_GREATER_THAN_UINT32(r.wordIntervalMs() * 2, r.currentWordDurationMs());
+  TEST_ASSERT_TRUE(r.currentWordEndsSentence());
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_latin_tokenization_unchanged);
@@ -108,5 +135,8 @@ int main(void) {
   RUN_TEST(test_cjk_with_interposed_space);
   RUN_TEST(test_is_cjk_codepoint_ranges);
   RUN_TEST(test_utf8_encode_decode_roundtrip);
+  RUN_TEST(test_cjk_char_dwells_longer_than_interval);
+  RUN_TEST(test_latin_single_char_has_no_bonus);
+  RUN_TEST(test_cjk_full_stop_pauses_and_ends_sentence);
   return UNITY_END();
 }

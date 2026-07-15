@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "text/CjkText.h"
 #include "text/LatinText.h"
 
 namespace {
@@ -127,6 +128,10 @@ constexpr uint8_t kClausePausePercent = 80;
 constexpr uint8_t kEllipsisPausePercent = 110;
 constexpr uint8_t kSentencePausePercent = 135;
 constexpr uint8_t kStrongSentencePausePercent = 150;
+// Each CJK character is one flash but carries a whole morpheme, so it wants a little more dwell
+// than a bare interval -- otherwise dense text blows past too fast. Applied via the complexity
+// delay, so it stays proportional to the user's pacing settings.
+constexpr uint8_t kCjkReadingBonusPercent = 40;
 constexpr uint8_t kMaxCatchUpWords = 4;
 constexpr uint16_t kMaxPacingDelayMs = 600;
 
@@ -504,7 +509,48 @@ uint16_t complexityBonusPercentForWord(const String &word) {
   return std::min<uint16_t>(kComplexWordMaxPercent, bonusPercent);
 }
 
+// If `word` is a single CJK codepoint, return it (and true). CJK tokens are one codepoint each
+// (the tokenizer segments them that way), so this both detects and classifies them.
+bool singleCjkCodepoint(const String &word, uint32_t &cp) {
+  size_t index = 0;
+  if (!CjkText::decodeUtf8At(word, index, cp)) {
+    return false;
+  }
+  return index == word.length() && CjkText::isCjkCodepoint(cp);
+}
+
+// A CJK codepoint that carries reading weight (ideograph/kana/hangul) -- excludes the CJK symbol &
+// punctuation block so periods/commas don't get the per-character dwell bonus.
+bool isCjkReadingCodepoint(uint32_t cp) {
+  return CjkText::isCjkCodepoint(cp) && !(cp >= 0x3000 && cp <= 0x303F) &&
+         !(cp >= 0xFF00 && cp <= 0xFF0F) && !(cp >= 0xFF61 && cp <= 0xFF65);
+}
+
+// Pause weight for CJK punctuation the normalizer keeps as-is (fullwidth ！？，．：； are already
+// folded to ASCII upstream; ideographic 。、・ and their halfwidth forms survive as CJK).
+uint16_t cjkPunctuationPausePercent(uint32_t cp) {
+  switch (cp) {
+    case 0x3002:  // 。 ideographic full stop
+    case 0xFF61:  // ｡ halfwidth ideographic full stop
+      return kSentencePausePercent;
+    case 0x3001:  // 、 ideographic comma
+    case 0xFF64:  // ､ halfwidth ideographic comma
+    case 0x30FB:  // ・ katakana middle dot
+    case 0xFF65:  // ･ halfwidth katakana middle dot
+      return kCommaPausePercent;
+    default:
+      return 0;
+  }
+}
+
+bool cjkEndsSentence(uint32_t cp) { return cp == 0x3002 || cp == 0xFF61; }
+
 uint16_t punctuationPausePercentForWord(const String &word, bool nextWordStartsLowercase) {
+  uint32_t cjkCp = 0;
+  if (singleCjkCodepoint(word, cjkCp)) {
+    return cjkPunctuationPausePercent(cjkCp);
+  }
+
   if (endsWithEllipsis(word)) {
     return kEllipsisPausePercent;
   }
@@ -547,6 +593,12 @@ uint32_t pacingBonusMsForWord(const String &word, bool nextWordStartsLowercase,
       scaledDelayMs(scaledPercent(punctuationPausePercentForWord(word, nextWordStartsLowercase),
                                   config.punctuationScalePercent),
                     config.punctuationDelayMs);
+  uint32_t cjkCp = 0;
+  if (singleCjkCodepoint(word, cjkCp) && isCjkReadingCodepoint(cjkCp)) {
+    totalBonusMs += scaledDelayMs(
+        scaledPercent(kCjkReadingBonusPercent, config.complexWordScalePercent),
+        config.complexWordDelayMs);
+  }
   return totalBonusMs;
 }
 
@@ -850,6 +902,11 @@ bool ReadingLoop::wordEndsSentenceAt(size_t wordIndex) const {
   const String word = wordAt(wordIndex);
   if (word.isEmpty()) {
     return false;
+  }
+
+  uint32_t cjkCp = 0;
+  if (singleCjkCodepoint(word, cjkCp)) {
+    return cjkEndsSentence(cjkCp);
   }
 
   switch (trailingRhythmChar(word)) {
