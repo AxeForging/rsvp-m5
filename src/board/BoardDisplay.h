@@ -18,5 +18,7 @@ namespace Board::Display {
     void sleep();
     void wake();
     bool pushColors(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const uint16_t* data);
+    // Decode a baseline JPEG blob and draw it at the panel origin (used for the boot splash).
+    void drawJpeg(const uint8_t* data, size_t len);
 
 } // namespace Board::Display

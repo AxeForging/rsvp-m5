@@ -8,6 +8,7 @@
 
 #include "board/BoardDisplay.h"
 #include "board/BoardConfig.h"
+#include "display/EmbeddedBootImage.h"
 #include "display/EmbeddedAtkinsonFont.h"
 #include "display/EmbeddedAtkinsonFont70.h"
 #include "display/EmbeddedOpenDyslexicFont.h"
@@ -1837,6 +1838,16 @@ void DisplayManager::flushFullWidthLogicalBand(int yStart, int yEnd) {
   }
 
   tickerPlaybackFrameActive_ = true;
+}
+
+void DisplayManager::renderBootImage() {
+  if (!initialized_) {
+    return;
+  }
+  // Direct JPEG blit bypasses the virtual framebuffer, so invalidate the cache key -- the next
+  // framebuffer render must repaint fully rather than assume the panel still matches it.
+  Board::Display::drawJpeg(kBootImageJpeg, kBootImageJpegLen);
+  lastRenderKey_ = "boot-image";
 }
 
 void DisplayManager::renderCenteredWord(const String &word, uint16_t color) {

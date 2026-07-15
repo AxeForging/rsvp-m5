@@ -24,7 +24,7 @@
 
 static const char* kAppTag = "app";
 constexpr uint32_t kOtaCheckTaskStackBytes = 10240;
-constexpr uint32_t kBootSplashMs = 750;
+constexpr uint32_t kBootSplashMs = 2000;  // AxeForging boot splash -- long enough to read
 constexpr uint32_t kWpmFeedbackMs = 1800;
 constexpr uint32_t kPowerOffHoldMs = 1600;
 constexpr uint32_t kPowerOffReleaseWaitMs = 4000;
@@ -1006,7 +1006,7 @@ void App::setState(AppState nextState, uint32_t nowMs) {
         display_.renderCenteredWord("SLEEP");
         break;
     case AppState::Booting:
-        display_.renderCenteredWord("READY");
+        display_.renderBootImage();
         break;
     }
 
