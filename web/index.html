@@ -161,6 +161,20 @@
         line-height: 1.15;
       }
 
+      /* Overview card: bare .card has no padding, so pad it to match the step cards
+         (.section-body-inner uses 24px 28px) and give the kicker/title room to breathe. */
+      #features-section {
+        padding: clamp(24px, 4vw, 30px);
+      }
+
+      #features-section .section-kicker {
+        margin-bottom: 8px;
+      }
+
+      #features-section .section-title {
+        font-size: 1.32rem;
+      }
+
       .step-number {
         display: inline-flex;
         align-items: center;
