@@ -9,6 +9,14 @@
 namespace {
 
 constexpr const char *kDemoWords[] = {
+    // Multilingual showcase up front: one line per supported script. CJK is pre-split one
+    // character per flash (the demo bypasses the tokenizer, which would otherwise do this).
+    "RSVP",  "M5",    "now",   "reads", "many",  "scripts.",
+    "English:",  "read",  "one",   "word", "at",   "a",     "time.",
+    "日", "本", "語", "で", "速", "読", "。",
+    "中", "文", "速", "读", "。",
+    "한", "국", "어", "읽", "기", ".",
+
     "This",        "is",         "the",         "minimal",     "RSVP",
     "demo",        "reader",     "running",     "on",          "the",
     "M5Stack",     "Core2",      "board.",
