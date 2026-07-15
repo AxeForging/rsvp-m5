@@ -36,6 +36,9 @@ constexpr uint32_t kScrollAnimationFrameMs = 16;
 constexpr uint16_t kSwipeThresholdPx = 40;
 constexpr uint16_t kAxisBiasPx = 12;
 constexpr uint16_t kTapSlopPx = 26;
+// On-screen extension of the 3 hard-to-hit capacitive buttons: the bottom strip's left/right
+// thirds tap slower/faster; the centre third stays play/pause. ponytail: fixed 26px strip.
+constexpr uint16_t kBottomButtonStripPx = 26;
 constexpr uint16_t kReaderDoubleTapSlopPx = 92;
 constexpr uint16_t kPreviousSentenceTapWidthPx = 96;
 constexpr uint16_t kPreviousSentenceTapHeightPx = 60;
@@ -1820,6 +1823,21 @@ bool App::isPreviousSentenceTap(uint16_t x, uint16_t y) const {
         && y <= kReaderChromeTopMarginPx + kPreviousSentenceTapHeightPx;
 }
 
+// Mirrors the capacitive buttons onto the reliable touch panel just above them.
+int App::bottomSpeedZone(uint16_t x, uint16_t y) const {
+    if (y < Board::Config::DISPLAY_HEIGHT - kBottomButtonStripPx) {
+        return 0;
+    }
+    const int third = Board::Config::DISPLAY_WIDTH / 3;
+    if (x < third) {
+        return -1;  // slower
+    }
+    if (x >= 2 * third) {
+        return 1;  // faster
+    }
+    return 0;  // centre third = play/pause, handled as a normal tap
+}
+
 bool App::isActivelyReading() const {
     return state_ == AppState::Playing;
 }
@@ -2067,7 +2085,8 @@ void App::applyPausedTouchGesture(const TouchEvent& event, uint32_t nowMs) {
         // top-edge zone so a downward menu swipe there is still disambiguated on release.
         const bool inTopMenuZone = Board::Config::ENABLE_TOP_EDGE_MENU_SWIPE
                                    && event.y <= kMenuSwipeTopZonePx;
-        if (state_ == AppState::Playing && !inTopMenuZone
+        const bool inSpeedZone = bottomSpeedZone(event.x, event.y) != 0;
+        if (state_ == AppState::Playing && !inTopMenuZone && !inSpeedZone
             && Board::Config::TOUCH_READER_PLAYBACK_ENABLED) {
             pausedTouch_.active = false;  // consume this touch: ignore its release
             pausedTouchIntent_ = TouchIntent::None;
@@ -2106,7 +2125,10 @@ void App::applyPausedTouchGesture(const TouchEvent& event, uint32_t nowMs) {
         if (ended) {
             pausedTouch_.active = false;
             pausedTouchIntent_ = TouchIntent::None;
-            if (tapLike && Board::Config::TOUCH_READER_PLAYBACK_ENABLED) {
+            const int zone = tapLike ? bottomSpeedZone(pausedTouch_.startX, pausedTouch_.startY) : 0;
+            if (zone != 0) {
+                adjustReaderWpm(zone, nowMs);
+            } else if (tapLike && Board::Config::TOUCH_READER_PLAYBACK_ENABLED) {
                 toggleReaderPlaybackFromShortcut(nowMs);
             }
         }
@@ -2148,7 +2170,10 @@ void App::applyPausedTouchGesture(const TouchEvent& event, uint32_t nowMs) {
     if (ended) {
         pausedTouch_.active = false;
         pausedTouchIntent_ = TouchIntent::None;
-        if (tapLike && previewBrowseMode) {
+        const int zone = tapLike ? bottomSpeedZone(pausedTouch_.startX, pausedTouch_.startY) : 0;
+        if (zone != 0) {
+            adjustReaderWpm(zone, nowMs);
+        } else if (tapLike && previewBrowseMode) {
             contextViewVisible_ = false;
             renderActiveReader(nowMs);
         } else if (tapLike && Board::Config::TOUCH_READER_PLAYBACK_ENABLED) {

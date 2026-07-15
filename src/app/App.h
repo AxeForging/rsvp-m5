@@ -223,6 +223,8 @@ private:
     bool isFooterMetricTap(uint16_t x, uint16_t y) const;
     bool isBatteryBadgeTap(uint16_t x, uint16_t y) const;
     bool isPreviousSentenceTap(uint16_t x, uint16_t y) const;
+    // 0 = none/centre (normal tap), -1 = slower (bottom-left), +1 = faster (bottom-right).
+    int bottomSpeedZone(uint16_t x, uint16_t y) const;
     bool isActivelyReading() const;
     bool readerFooterVisible() const;
     DisplayManager::ReaderChrome readerChrome() const;
