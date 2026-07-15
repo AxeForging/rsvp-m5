@@ -592,7 +592,10 @@ private:
     FooterMetricMode footerMetricMode_ = FooterMetricMode::Percentage;
     BatteryLabelMode batteryLabelMode_ = BatteryLabelMode::Percent;
     ScreensaverMode screensaverMode_ = ScreensaverMode::Life;
-    PauseMode pauseMode_ = PauseMode::SentenceEnd;
+    // RSVP is unforgiving -- when you lose the thread you need the word to FREEZE the instant you
+    // tap, not run to the end of the sentence. Instant is the sane default; "Sentence" stays as an
+    // opt-in in Settings > Pacing for readers who want the current thought finished first.
+    PauseMode pauseMode_ = PauseMode::Instant;
     bool darkMode_ = true;
     bool nightMode_ = false;
     UiLanguage uiLanguage_ = UiLanguage::English;

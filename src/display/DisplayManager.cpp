@@ -30,7 +30,7 @@ constexpr uint16_t kTrueBlack = 0x0000;
 constexpr uint16_t kPureWhite = 0xFFFF;
 constexpr uint16_t kDarkWordColor = 0xFFFF;
 constexpr uint16_t kLightWordColor = 0x0000;
-constexpr uint16_t kFocusLetterColor = 0xF800;
+constexpr uint16_t kFocusLetterColor = 0xD2A5;  // AxeForge accent #d3542f in RGB565
 constexpr uint16_t kNightWordColor = 0xFCE0;
 constexpr uint16_t kNightFocusColor = 0xFA80;
 constexpr uint16_t kDarkMenuDimColor = 0x8410;
@@ -1692,10 +1692,11 @@ void DisplayManager::drawPreviousSentenceHint(bool playing) {
   const int downX = leftEdge + ((rightEdge - leftEdge) - downW) / 2;
   drawDownArrow(downX, kReaderChromeMarginTop + 1, downW, 9, color);
   // Top-right, row below the battery: playback state (arrow = playing, bars = paused).
+  // 8px gap under the battery text, matching the 8px top margin above it.
   const int pw = 12;
   const int ph = 14;
   const int px = kDisplayWidth - kReaderChromeMarginX - pw;
-  const int py = kReaderChromeMarginTop + kTinyGlyphHeight * kTinyScale + 4;
+  const int py = kReaderChromeMarginTop + kTinyGlyphHeight * kTinyScale + 8;
   if (playing) {
     drawRightArrow(px, py, pw, ph, color);
   } else {
