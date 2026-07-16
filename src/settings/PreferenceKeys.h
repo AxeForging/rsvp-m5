@@ -18,7 +18,6 @@ constexpr const char *kPrefWpm = "wpm";
 constexpr const char *kPrefBrightness = "bright";
 constexpr const char *kPrefDarkMode = "dark";
 constexpr const char *kPrefNightMode = "night";
-constexpr const char *kPrefYellowMode = "yellow_md";
 constexpr const char *kPrefUiLanguage = "ui_lang";
 constexpr const char *kPrefReaderMode = "read_mode";
 constexpr const char *kPrefHandedness = "handed";
@@ -30,8 +29,6 @@ constexpr const char *kPrefScreensaverMode = "scrn_sv";
 constexpr const char *kPrefReaderBatteryVisible = "read_bat";
 constexpr const char *kPrefReaderChapterVisible = "read_ch";
 constexpr const char *kPrefReaderProgressVisible = "read_pct";
-constexpr const char *kPrefChapterLabelRsvp = "ch_lbl_rsvp";
-constexpr const char *kPrefChapterLabelScroll = "ch_lbl_scroll";
 constexpr const char *kPrefReaderFontSize = "font_size";
 constexpr const char *kPrefReaderTypeface = "typeface";
 
@@ -48,22 +45,7 @@ constexpr const char *kPrefPacingComplexMs = "pace_cms";
 constexpr const char *kPrefPacingPunctuationMs = "pace_pms";
 constexpr const char *kPrefPauseMode = "pause_md";
 constexpr const char *kPrefAccurateTime = "time_est_a";
-constexpr const char *kPrefMenuRepeatMs = "menu_rpt";
 constexpr const char *kPrefStandbyTimer = "stby_tmr";
-constexpr const char *kPrefCpuPlay = "cpu_play";
-constexpr const char *kPrefCpuScroll = "cpu_scroll";
-constexpr const char *kPrefCpuPaused = "cpu_paused";
-constexpr const char *kPrefCpuMenu = "cpu_menu";
-constexpr const char *kPrefCpuStandby = "cpu_stby";
-constexpr const char *kPrefAutoDimLevel = "dim_lvl";
-constexpr const char *kPrefAutoDimDelay = "dim_dly";
-constexpr const char *kPrefTimerDurationByGenre[] = {
-    "tmr_dur_0",
-    "tmr_dur_1",
-    "tmr_dur_2",
-    "tmr_dur_3",
-    "tmr_dur_4",
-};
 
 // Wi-Fi + OTA.
 constexpr const char *kPrefWifiSsid = "wifi_ssid";

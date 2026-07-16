@@ -829,8 +829,6 @@ void ReadingLoop::setPacingConfig(const PacingConfig &config) {
   pacingConfig_.punctuationScalePercent = clampScalePercent(config.punctuationScalePercent);
 }
 
-const ReadingLoop::PacingConfig &ReadingLoop::pacingConfig() const { return pacingConfig_; }
-
 bool ReadingLoop::advance(size_t steps) {
   const size_t count = wordCount();
   if (count == 0) {

@@ -21,10 +21,6 @@ namespace StoragePaths {
         return hasExtension(path, kRsvpExtension);
     }
 
-    bool hasEpubExtension(const String& path) {
-        return hasExtension(path, kEpubExtension);
-    }
-
     String parentDirectoryForPath(const String& path) {
         const int separator = path.lastIndexOf('/');
         if (separator <= 0) {
@@ -43,10 +39,6 @@ namespace StoragePaths {
         return siblingPath;
     }
 
-    String epubSiblingPathForRsvp(const String& rsvpPath) {
-        return siblingPathWithExtension(rsvpPath, kEpubExtension);
-    }
-
     String displayNameForPath(const String& path) {
         const int separator = path.lastIndexOf('/');
         if (separator < 0) {
@@ -63,14 +55,8 @@ namespace StoragePaths {
             name.remove(name.length() - std::strlen(kTextExtension));
         } else if (lowered.endsWith(kRsvpExtension)) {
             name.remove(name.length() - std::strlen(kRsvpExtension));
-        } else if (lowered.endsWith(kEpubExtension)) {
-            name.remove(name.length() - std::strlen(kEpubExtension));
         }
         return name;
-    }
-
-    String rsvpCachePathForEpub(const String& epubPath) {
-        return siblingPathWithExtension(epubPath, kRsvpExtension);
     }
 
     String indexedIndexPathFor(const String& path) {

@@ -68,11 +68,9 @@ class DisplayManager {
   void setDarkMode(bool darkMode);
   void setNightMode(bool nightMode);
   void setUiOrientation(Board::UiOrientation orientation);
-  void setUiRotated180(bool rotated180);
   void setTypographyConfig(const TypographyConfig &config);
-  TypographyConfig typographyConfig() const;
-  bool darkMode() const;
-  bool nightMode() const;
+  // Re-stat the SD for the downloaded CJK VLW after a font download (clears the "absent" cache).
+  void resetCjkFontCache();
   void prepareForSleep();
   bool wakeFromSleep();
   void renderCenteredWord(const String &word, uint16_t color = 0xFFFF);
@@ -81,10 +79,6 @@ class DisplayManager {
                       uint8_t progressPercent = 0, bool showFooter = true,
                       const String &footerStatusLabel = "",
                       ReaderChrome chrome = ReaderChrome());
-  void renderRsvpWordWithWpm(const String &word, uint16_t wpm, const String &chapterLabel = "",
-                             uint8_t progressPercent = 0, bool showFooter = true,
-                             const String &footerStatusLabel = "",
-                             ReaderChrome chrome = ReaderChrome());
   void renderPhantomRsvpWord(const String &beforeText, const String &word, const String &afterText,
                              uint8_t fontSizeLevel, const String &chapterLabel = "",
                              uint8_t progressPercent = 0, bool showFooter = true,
@@ -105,11 +99,6 @@ class DisplayManager {
                         uint8_t progressPercent = 0, const String &overlayText = "",
                         const String &footerStatusLabel = "",
                         ReaderChrome chrome = ReaderChrome());
-  void renderWordTickerView(const std::vector<ContextWord> &words, size_t currentWordIndex,
-                            uint8_t fontSizeLevel, uint16_t motionPermille = 0,
-                            const String &chapterLabel = "", uint8_t progressPercent = 0,
-                            const String &overlayText = "", bool showFooter = true,
-                            ReaderChrome chrome = ReaderChrome());
   void renderMenu(const char *const *items, size_t itemCount, size_t selectedIndex);
   void renderMenu(const std::vector<String> &items, size_t selectedIndex);
   void renderLibrary(const std::vector<LibraryItem> &items, size_t selectedIndex);
@@ -148,7 +137,6 @@ class DisplayManager {
   String fitSerifTextScaled(const String &text, int maxWidth, uint8_t scalePercent) const;
   String fitSerifTextTrailingScaled(const String &text, int maxWidth, uint8_t scalePercent) const;
   String fitTinyText(const String &text, int maxWidth, int scale) const;
-  String fitTinyTextTrailing(const String &text, int maxWidth, int scale) const;
   void drawGlyph(int x, int y, char c, uint16_t color);
   void drawGlyph(int x, int y, char c, uint16_t color, ReaderTypeface typeface);
   void drawSerifGlyphScaled(int x, int y, char c, uint16_t color, int divisor);
@@ -169,9 +157,6 @@ class DisplayManager {
   void drawTinyTextCentered(const String &text, int y, uint16_t color, int scale);
   void drawTinyTextCentered(const String &text, int y, uint16_t color, int scale, int width,
                             int xOffset);
-  void drawSerif70TextCentered(const String &text, int y, uint16_t color, int width, int xOffset);
-  void drawSerifTextScaledCentered(const String &text, int y, uint16_t color, uint8_t scalePercent,
-                                   int width, int xOffset);
   void drawBatteryBadge();
   void drawBatteryBadge(int logicalWidth, int logicalHeight);
   void drawBatteryIcon(int x, int y, int w, int h, int fillPercent, uint16_t color);
@@ -198,7 +183,6 @@ class DisplayManager {
   void drawRsvpWordScaledPercentAt(const String &word, int x, int y, int focusIndex,
                                    uint8_t scalePercent);
   void drawWordLine(const String &word, int y, uint16_t color);
-  void drawMenuItem(const String &item, int y, bool selected);
   void applyBrightness();
   void flushScaledFrame(int scale, int virtualWidth, int virtualHeight);
   void flushFullWidthLogicalBand(int yStart, int yEnd);

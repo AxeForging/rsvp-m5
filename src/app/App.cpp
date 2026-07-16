@@ -9,14 +9,6 @@
 #include "board/BoardInput.h"
 #include "storage/index/ReadingProgress.h"
 
-#ifndef RSVP_USB_TRANSFER_ENABLED
-#define RSVP_USB_TRANSFER_ENABLED 0
-#endif
-
-#ifndef RSVP_USB_TRANSFER_AUTO_START
-#define RSVP_USB_TRANSFER_AUTO_START 0
-#endif
-
 // Boards with dedicated left/right speed buttons opt in via build flag (see platformio.ini).
 #ifndef RSVP_SIDE_BUTTONS_ADJUST_WPM
 #define RSVP_SIDE_BUTTONS_ADJUST_WPM 0
@@ -31,7 +23,6 @@ constexpr uint32_t kPowerOffReleaseWaitMs = 4000;
 constexpr uint32_t kBatterySampleIntervalMs = 180000;
 constexpr uint32_t kTouchPlayHoldMs = 420;
 constexpr uint32_t kPreviewBrowseHoldMs = 240;
-constexpr uint32_t kReaderDoubleTapWindowMs = 520;
 constexpr uint32_t kScrollAnimationFrameMs = 16;
 constexpr uint16_t kSwipeThresholdPx = 40;
 constexpr uint16_t kAxisBiasPx = 12;
@@ -39,18 +30,8 @@ constexpr uint16_t kTapSlopPx = 26;
 // On-screen extension of the 3 hard-to-hit capacitive buttons: the bottom strip's left/right
 // thirds tap slower/faster; the centre third stays play/pause. ponytail: fixed 26px strip.
 constexpr uint16_t kBottomButtonStripPx = 26;
-constexpr uint16_t kReaderDoubleTapSlopPx = 92;
-constexpr uint16_t kPreviousSentenceTapWidthPx = 96;
-constexpr uint16_t kPreviousSentenceTapHeightPx = 60;
-constexpr uint16_t kFooterMetricTapWidthPx = 220;
-constexpr uint16_t kFooterMetricTapHeightPx = 32;
-constexpr uint16_t kBatteryBadgeTapWidthPx = 160;
-constexpr uint16_t kBatteryBadgeTapHeightPx = 40;
-constexpr uint16_t kReaderChromeMarginXPx = Board::Config::READER_CHROME_MARGIN_X;
 constexpr uint16_t kReaderChromeTopMarginPx = Board::Config::READER_CHROME_MARGIN_TOP;
 constexpr uint16_t kReaderChromeBottomMarginPx = Board::Config::READER_CHROME_MARGIN_BOTTOM;
-constexpr uint16_t kReaderBatteryMarginXPx = Board::Config::READER_BATTERY_MARGIN_X;
-constexpr uint16_t kReaderBatteryTopMarginPx = Board::Config::READER_BATTERY_MARGIN_TOP;
 constexpr uint16_t kMenuSwipeTopZonePx =
     kReaderChromeTopMarginPx + (Board::Config::ENABLE_TOP_EDGE_MENU_SWIPE ? 64 : 0);
 constexpr uint16_t kQuickSettingsSwipeBottomZonePx =
@@ -67,7 +48,6 @@ constexpr size_t kContextPreviewWindowWords = 288;
 constexpr size_t kContextPreviewAnchorLeadWords = 112;
 constexpr size_t kContextPreviewMaxParagraphSnapWords = 48;
 constexpr uint32_t kProgressSaveIntervalMs = 15000;
-constexpr uint32_t kUsbTransferExitHoldMs = 1200;
 constexpr size_t kTimeEstimateBlockWords = 256;
 constexpr size_t kTimeEstimateBlocksPerUpdate = 1;
 constexpr uint32_t kTimeEstimateProgressLogMs = 5000;
@@ -106,9 +86,6 @@ namespace {
         MenuSdCardCheck,
         MenuRssFeeds,
         MenuCompanionSync,
-#if RSVP_USB_TRANSFER_ENABLED
-        MenuUsbTransfer,
-#endif
         MenuPowerOff,
         MenuItemCount,
     };
@@ -196,9 +173,6 @@ namespace {
 
     enum QuickSyncItem : size_t {
         QuickSyncWifi,
-#if RSVP_USB_TRANSFER_ENABLED
-        QuickSyncUsb,
-#endif
         QuickSyncItemCount,
     };
 
@@ -779,13 +753,6 @@ void App::begin() {
     Board::Audio::begin();
     focusTimer_.begin();
 
-#if RSVP_USB_TRANSFER_ENABLED && RSVP_USB_TRANSFER_AUTO_START
-    state_ = AppState::Booting;
-    Serial.println("[app] USB transfer auto-start active");
-    enterUsbTransfer(millis());
-    return;
-#endif
-
     display_.renderBootImage();  // boot splash covers the SD/library load, not a bare progress bar
     storageReady_ = storage_.begin();
     const uint16_t savedWpm = preferences_.getUShort(kPrefWpm, reader_.wpm());
@@ -915,8 +882,6 @@ const char* App::stateName(AppState state) const {
         return "Menu";
     case AppState::CompanionSync:
         return "CompanionSync";
-    case AppState::UsbTransfer:
-        return "UsbTransfer";
     case AppState::Standby:
         return "Standby";
     case AppState::Sleeping:
@@ -1000,9 +965,6 @@ void App::setState(AppState nextState, uint32_t nowMs) {
     case AppState::CompanionSync:
         display_.renderStatus("Sync", companionSync_.statusLine1(), companionSync_.statusLine2());
         break;
-    case AppState::UsbTransfer:
-        display_.renderStatus("USB", "Preparing SD", "Eject when done");
-        break;
     case AppState::Standby:
         seedStandbyScreensaver(nowMs);
         updateStandbyScreensaver(nowMs, true);
@@ -1031,11 +993,6 @@ void App::updateState(uint32_t nowMs) {
 
         setState((touchPlayHeld_ || playLocked_ || pauseAtSentenceEndRequested_) ? AppState::Playing : AppState::Paused,
                  nowMs);
-        return;
-    }
-
-    if (state_ == AppState::UsbTransfer) {
-        updateUsbTransfer(nowMs);
         return;
     }
 
@@ -1221,8 +1178,7 @@ bool App::handleMenuInput(const Input::Event& event, uint32_t nowMs) {
 
 bool App::handleReaderInput(const Input::Event& event, uint32_t nowMs) {
     if (Input::isTouchEvent(event)) {
-        if (state_ == AppState::Booting || state_ == AppState::UsbTransfer || state_ == AppState::Sleeping
-            || powerOffStarted_) {
+        if (state_ == AppState::Booting || state_ == AppState::Sleeping || powerOffStarted_) {
             Input::cancel();
             pausedTouch_.active = false;
             pausedTouchIntent_ = TouchIntent::None;
@@ -1243,12 +1199,6 @@ bool App::handleReaderInput(const Input::Event& event, uint32_t nowMs) {
     if (state_ == AppState::CompanionSync && Input::hasControl(event.controls, Input::InputPower)
         && event.gesture == Input::Gesture::LongPressed) {
         exitCompanionSync(nowMs);
-        return true;
-    }
-
-    if (state_ == AppState::UsbTransfer && Input::hasControl(event.controls, Input::InputPower)
-        && event.gesture == Input::Gesture::LongPressed) {
-        exitUsbTransfer(nowMs);
         return true;
     }
 
@@ -1331,7 +1281,7 @@ bool App::handleReaderInput(const Input::Event& event, uint32_t nowMs) {
 }
 
 void App::toggleMenuFromPowerButton(uint32_t nowMs) {
-    if (state_ == AppState::Booting || state_ == AppState::UsbTransfer || state_ == AppState::CompanionSync
+    if (state_ == AppState::Booting || state_ == AppState::CompanionSync
         || state_ == AppState::Standby || state_ == AppState::Sleeping) {
         return;
     }
@@ -1820,21 +1770,6 @@ void App::resetReaderTapTracking() {
     lastReaderTapValid_ = false;
 }
 
-bool App::isFooterMetricTap(uint16_t x, uint16_t y) const {
-    return x >= Board::Config::DISPLAY_WIDTH - kReaderChromeMarginXPx - kFooterMetricTapWidthPx
-        && y >= Board::Config::DISPLAY_HEIGHT - kReaderChromeBottomMarginPx - kFooterMetricTapHeightPx;
-}
-
-bool App::isBatteryBadgeTap(uint16_t x, uint16_t y) const {
-    return x >= Board::Config::DISPLAY_WIDTH - kReaderBatteryMarginXPx - kBatteryBadgeTapWidthPx
-        && y <= kReaderBatteryTopMarginPx + kBatteryBadgeTapHeightPx;
-}
-
-bool App::isPreviousSentenceTap(uint16_t x, uint16_t y) const {
-    return x <= kReaderChromeMarginXPx + kPreviousSentenceTapWidthPx
-        && y <= kReaderChromeTopMarginPx + kPreviousSentenceTapHeightPx;
-}
-
 // Mirrors the capacitive buttons onto the reliable touch panel just above them.
 int App::bottomSpeedZone(uint16_t x, uint16_t y) const {
     if (y < Board::Config::DISPLAY_HEIGHT - kBottomButtonStripPx) {
@@ -1882,16 +1817,6 @@ String App::onOffLabel(bool enabled) const {
     return enabled ? uiText(UiText::On) : uiText(UiText::Off);
 }
 
-bool App::handlePreviousSentenceTap(uint16_t x, uint16_t y, uint32_t nowMs) {
-    const bool previewBrowseMode = contextViewVisible_ && !scrollModeEnabled();
-    if (previewBrowseMode || !isPreviousSentenceTap(x, y)) {
-        return false;
-    }
-
-    rewindSentenceAction(nowMs);
-    return true;
-}
-
 void App::rewindSentenceAction(uint32_t nowMs) {
     resetReaderTapTracking();
     pausedTouch_.active = false;
@@ -1918,103 +1843,6 @@ void App::adjustReaderWpm(int delta, uint32_t nowMs) {
     renderWpmFeedback(nowMs);
     Serial.printf("[app] WPM=%u interval=%lu ms\n", reader_.wpm(),
                   static_cast<unsigned long>(reader_.wordIntervalMs()));
-}
-
-bool App::handleFooterMetricTap(uint16_t x, uint16_t y, uint32_t nowMs) {
-    if (isActivelyReading() || !readerFooterVisible() || !isFooterMetricTap(x, y)) {
-        return false;
-    }
-
-    switch (footerMetricMode_) {
-    case FooterMetricMode::Percentage:
-        footerMetricMode_ = FooterMetricMode::ChapterTime;
-        break;
-    case FooterMetricMode::ChapterTime:
-        footerMetricMode_ = FooterMetricMode::BookTime;
-        break;
-    case FooterMetricMode::BookTime:
-    default:
-        footerMetricMode_ = FooterMetricMode::Percentage;
-        break;
-    }
-
-    preferences_.putUChar(kPrefFooterMetricMode, static_cast<uint8_t>(footerMetricMode_));
-    resetReaderTapTracking();
-    renderActiveReader(nowMs);
-    const char* modeName = "percent";
-    switch (footerMetricMode_) {
-    case FooterMetricMode::ChapterTime:
-        modeName = "chapter";
-        break;
-    case FooterMetricMode::BookTime:
-        modeName = "book";
-        break;
-    case FooterMetricMode::Percentage:
-    default:
-        modeName = "percent";
-        break;
-    }
-    Serial.printf("[reader] footer metric=%s\n", modeName);
-    return true;
-}
-
-bool App::handleBatteryBadgeTap(uint16_t x, uint16_t y, uint32_t nowMs) {
-    if (batteryLabel_.isEmpty() || !readerChrome().showBattery || !isBatteryBadgeTap(x, y)) {
-        return false;
-    }
-
-    switch (batteryLabelMode_) {
-    case BatteryLabelMode::Percent:
-        batteryLabelMode_ = BatteryLabelMode::TimeRemaining;
-        break;
-    case BatteryLabelMode::TimeRemaining:
-        batteryLabelMode_ = BatteryLabelMode::Voltage;
-        break;
-    case BatteryLabelMode::Voltage:
-    default:
-        batteryLabelMode_ = BatteryLabelMode::Percent;
-        break;
-    }
-    preferences_.putUChar(kPrefBatteryLabelMode, static_cast<uint8_t>(batteryLabelMode_));
-    batteryLabel_ = currentBatteryLabel();
-    display_.setBatteryLabel(batteryLabel_);
-    resetReaderTapTracking();
-    renderActiveReader(nowMs);
-    const char* modeName = "percent";
-    if (batteryLabelMode_ == BatteryLabelMode::TimeRemaining) {
-        modeName = "time";
-    } else if (batteryLabelMode_ == BatteryLabelMode::Voltage) {
-        modeName = "voltage";
-    }
-    Serial.printf("[power] battery label mode=%s label=%s\n", modeName, batteryLabel_.c_str());
-    return true;
-}
-
-void App::handleReaderTap(uint16_t x, uint16_t y, uint32_t nowMs) {
-    const bool recentTap = lastReaderTapValid_ && nowMs - lastReaderTapMs_ <= kReaderDoubleTapWindowMs;
-    const bool sameRegion =
-        recentTap
-        && abs(static_cast<int>(x) - static_cast<int>(lastReaderTapX_)) <= static_cast<int>(kReaderDoubleTapSlopPx)
-        && abs(static_cast<int>(y) - static_cast<int>(lastReaderTapY_)) <= static_cast<int>(kReaderDoubleTapSlopPx);
-
-    if (sameRegion) {
-        resetReaderTapTracking();
-        toggleReaderPlaybackFromShortcut(nowMs);
-        Serial.printf("[touch] reader double tap state=%s\n", stateName(state_));
-        return;
-    }
-
-    if (recentTap) {
-        Serial.printf("[touch] double tap miss dx=%d dy=%d dt=%lu\n",
-                      static_cast<int>(x) - static_cast<int>(lastReaderTapX_),
-                      static_cast<int>(y) - static_cast<int>(lastReaderTapY_),
-                      static_cast<unsigned long>(nowMs - lastReaderTapMs_));
-    }
-
-    lastReaderTapValid_ = true;
-    lastReaderTapMs_ = nowMs;
-    lastReaderTapX_ = x;
-    lastReaderTapY_ = y;
 }
 
 void App::requestReaderPauseAtSentenceEnd(uint32_t nowMs) {
@@ -2515,7 +2343,7 @@ void App::selectFocusTimerGenre(uint32_t nowMs) {
         genre = FocusTimer::Genre::Chores;
         break;
     case 2:
-        genre = FocusTimer::Genre::RsvpNano;
+        genre = FocusTimer::Genre::Work;
         break;
     case 3:
         genre = FocusTimer::Genre::StrengthLabs;
@@ -2730,11 +2558,6 @@ void App::moveMenuSelection(int direction) {
             case MenuCompanionSync:
                 selectedLabel = "Companion sync";
                 break;
-#if RSVP_USB_TRANSFER_ENABLED
-            case MenuUsbTransfer:
-                selectedLabel = uiText(UiText::UsbTransfer);
-                break;
-#endif
             case MenuPowerOff:
                 selectedLabel = uiText(UiText::PowerOff);
                 break;
@@ -2847,11 +2670,6 @@ void App::selectMenuItem(uint32_t nowMs) {
     case MenuRssFeeds:
         runRssFeedCheck(nowMs);
         return;
-#if RSVP_USB_TRANSFER_ENABLED
-    case MenuUsbTransfer:
-        enterUsbTransfer(nowMs);
-        return;
-#endif
     case MenuChapters:
         openChapterPicker();
         return;
@@ -2925,11 +2743,6 @@ void App::selectQuickSyncItem(uint32_t nowMs) {
     case QuickSyncWifi:
         enterCompanionSync(nowMs);
         return;
-#if RSVP_USB_TRANSFER_ENABLED
-    case QuickSyncUsb:
-        enterUsbTransfer(nowMs);
-        return;
-#endif
     default:
         return;
     }
@@ -4315,6 +4128,9 @@ void App::runFirmwareUpdate(const OtaUpdater::Config& config, bool automatic, ui
         Serial.printf("[cjk-font] code=%u summary=%s detail=%s\n",
                       static_cast<unsigned int>(fontResult.code), fontResult.summary.c_str(),
                       fontResult.detail.c_str());
+        if (fontResult.code == OtaUpdater::ResultCode::Success) {
+            display_.resetCjkFontCache();  // pick up the just-downloaded VLW without a reboot
+        }
         display_.renderStatus("CJK Font", fontResult.summary, fontResult.detail);
         delay(1500);
     }
@@ -4874,90 +4690,8 @@ void App::runSdCardRepair(uint32_t nowMs) {
     renderMenu();
 }
 
-void App::enterUsbTransfer(uint32_t nowMs) {
-    Serial.println("[app] entering USB transfer mode");
-    saveReadingPosition(true);
-    pausedTouch_.active = false;
-    pausedTouchIntent_ = TouchIntent::None;
-    wpmFeedbackVisible_ = false;
-    const size_t resumeIndex = reader_.currentIndex();
-    setState(AppState::UsbTransfer, nowMs);
-
-    activeBookStore_.close();
-    storage_.end();
-    if (!usbTransfer_.begin(true)) {
-        Serial.printf("[app] USB transfer failed: %s\n", usbTransfer_.statusMessage());
-        display_.renderStatus("USB", "SD not ready", "Returning");
-        storageReady_ = storage_.begin();
-        if (storageReady_ && usingStorageBook_ && !currentBookPath_.isEmpty()) {
-            const int refreshedBookIndex = findBookIndexByPath(currentBookPath_);
-            BookOpenOptions reloadOptions;
-            reloadOptions.allowIndexBuild = false;
-            reloadOptions.allowEpubConversion = false;
-            reloadOptions.rebuildTimeEstimate = false;
-            if (refreshedBookIndex >= 0
-                && loadBookAtIndex(static_cast<size_t>(refreshedBookIndex), nowMs, reloadOptions)) {
-                reader_.seekTo(resumeIndex);
-            }
-        }
-        setState(AppState::Paused, nowMs);
-        return;
-    }
-
-    const uint64_t sizeMb = usbTransfer_.cardSizeBytes() / (1024ULL * 1024ULL);
-    Serial.printf("[app] USB transfer active (%llu MB). Eject from computer when finished.\n", sizeMb);
-    display_.renderStatus("USB", "Copy books now", "Eject when done");
-}
-
-void App::updateUsbTransfer(uint32_t nowMs) {
-    if (!usbTransfer_.active()) {
-        return;
-    }
-
-    if (!usbTransfer_.ejected()) {
-        return;
-    }
-
-    exitUsbTransfer(nowMs);
-}
-
-void App::exitUsbTransfer(uint32_t nowMs) {
-    Serial.println("[app] USB transfer ejected; remounting SD");
-    display_.renderStatus("USB", "Remounting SD", "");
-    usbTransfer_.end();
-
-    storageReady_ = storage_.begin();
-    if (storageReady_) {
-        const int refreshedBookIndex = findBookIndexByPath(currentBookPath_);
-        if (refreshedBookIndex >= 0) {
-            const size_t resumeIndex = reader_.currentIndex();
-            BookOpenOptions reloadOptions;
-            reloadOptions.allowIndexBuild = false;
-            reloadOptions.allowEpubConversion = false;
-            reloadOptions.rebuildTimeEstimate = false;
-            if (loadBookAtIndex(static_cast<size_t>(refreshedBookIndex), nowMs, reloadOptions)) {
-                reader_.seekTo(resumeIndex);
-            } else {
-                Serial.println("[app] current indexed book unavailable after USB transfer");
-                usingStorageBook_ = false;
-                currentBookPath_ = "";
-                currentBookTitle_ = "Demo";
-                reader_.clearLoadedBook(nowMs);
-                reader_.begin(nowMs);
-            }
-        } else if (storage_.bookCount() > 0) {
-            loadBookAtIndex(0, nowMs);
-        }
-    } else {
-        Serial.println("[app] SD remount failed after USB transfer");
-    }
-
-    menuScreen_ = MenuScreen::Main;
-    setState(AppState::Paused, nowMs);
-}
-
 void App::enterStandby(uint32_t nowMs) {
-    if (state_ == AppState::Booting || state_ == AppState::UsbTransfer || state_ == AppState::CompanionSync
+    if (state_ == AppState::Booting || state_ == AppState::CompanionSync
         || state_ == AppState::Sleeping || powerOffStarted_) {
         return;
     }
@@ -5000,7 +4734,7 @@ void App::exitStandby(uint32_t nowMs) {
 
     AppState nextState = standbyReturnState_;
     if (nextState == AppState::Booting || nextState == AppState::Playing || nextState == AppState::CompanionSync
-        || nextState == AppState::UsbTransfer || nextState == AppState::Standby || nextState == AppState::Sleeping) {
+        || nextState == AppState::Standby || nextState == AppState::Sleeping) {
         nextState = AppState::Paused;
     }
 
@@ -5441,92 +5175,6 @@ void App::enterPowerOff(uint32_t nowMs) {
     Board::System::deepSleepUntilConfiguredWake();
 }
 
-void App::enterSleep(uint32_t nowMs) {
-    Serial.println("[app] entering light sleep; press BOOT to wake");
-    saveReadingPosition(true);
-    mirrorReadingPositionToSidecar();
-    setState(AppState::Sleeping, nowMs);
-    Serial.flush();
-    delay(200);
-
-    display_.prepareForSleep();
-    activeBookStore_.close();
-    storage_.end();
-    Input::end();
-    inputInitialized_ = false;
-
-    Board::System::lightSleepUntilBootButton();
-    wakeFromSleep();
-}
-
-void App::wakeFromSleep() {
-    const uint32_t nowMs = millis();
-    Serial.println("[app] woke from light sleep");
-
-    Board::System::begin();
-    inputInitialized_ = Input::begin();
-    powerOffStarted_ = false;
-    updateBatteryStatus(nowMs, true);
-    storage_.setStatusCallback(&App::handleStorageStatus, this);
-    pausedTouch_.active = false;
-    pausedTouchIntent_ = TouchIntent::None;
-    wpmFeedbackVisible_ = false;
-    menuScreen_ = MenuScreen::Main;
-    lastStateLogMs_ = nowMs;
-    state_ = AppState::Paused;
-
-    const bool displayReady = display_.wakeFromSleep();
-    storageReady_ = storage_.begin();
-
-    if (storageReady_ && usingStorageBook_ && !currentBookPath_.isEmpty()) {
-        const size_t resumeIndex = reader_.currentIndex();
-        const int refreshedBookIndex = findBookIndexByPath(currentBookPath_);
-        BookOpenOptions reloadOptions;
-        reloadOptions.allowIndexBuild = false;
-        reloadOptions.allowEpubConversion = false;
-        reloadOptions.rebuildTimeEstimate = false;
-        if (refreshedBookIndex >= 0 && loadBookAtIndex(static_cast<size_t>(refreshedBookIndex), nowMs, reloadOptions)) {
-            reader_.seekTo(resumeIndex);
-        } else {
-            Serial.println("[app] current indexed book unavailable after wake");
-            usingStorageBook_ = false;
-            currentBookPath_ = "";
-            currentBookTitle_ = "Demo";
-            reader_.clearLoadedBook(nowMs);
-            reader_.begin(nowMs);
-        }
-    }
-
-    if (displayReady) {
-        renderActiveReader(nowMs);
-    }
-}
-
-bool App::restoreSavedBook(uint32_t nowMs) {
-    const String savedPath = preferences_.getString(kPrefBookPath, "");
-    if (savedPath.isEmpty()) {
-        return false;
-    }
-
-    const int bookIndex = findBookIndexByPath(savedPath);
-    if (bookIndex < 0) {
-        Serial.printf("[app] saved book not found: %s\n", savedPath.c_str());
-        return false;
-    }
-
-    BookOpenOptions loadOptions;
-    loadOptions.allowIndexBuild = false;
-    loadOptions.allowEpubConversion = false;
-    loadOptions.rebuildTimeEstimate = false;
-    if (!loadBookAtIndex(static_cast<size_t>(bookIndex), nowMs, loadOptions)) {
-        return false;
-    }
-
-    Serial.printf("[app] restored %s at word %u\n", savedPath.c_str(),
-                  static_cast<unsigned int>(reader_.currentIndex()));
-    return true;
-}
-
 bool App::prepareBootBookLoad() {
     pendingBootBookIndex_ = 0;
     if (!storageReady_ || storage_.bookCount() == 0) {
@@ -5560,7 +5208,6 @@ void App::loadPendingBootBook(uint32_t nowMs) {
     const uint32_t startedMs = millis();
     BookOpenOptions loadOptions;
     loadOptions.allowIndexBuild = true;
-    loadOptions.allowEpubConversion = false;
     loadOptions.rebuildTimeEstimate = false;
     const bool loaded = loadBookAtIndex(pendingBootBookIndex_, nowMs, loadOptions);
     const uint32_t elapsedMs = millis() - startedMs;
@@ -5672,7 +5319,6 @@ bool App::loadBookAtIndex(size_t index, uint32_t nowMs, const BookOpenOptions& o
         loadOptions.loadedPath = &loadedPath;
         loadOptions.loadedIndex = &loadedIndex;
         loadOptions.allowIndexBuild = options.allowIndexBuild;
-        loadOptions.allowEpubConversion = options.allowEpubConversion;
         if (!storage_.loadIndexedBook(index, activeBookStore_, book, loadOptions)) {
             return false;
         }
@@ -5934,9 +5580,6 @@ void App::renderMainMenu() {
     items.push_back("SD card check");
     items.push_back("RSS feeds");
     items.push_back("Companion sync");
-#if RSVP_USB_TRANSFER_ENABLED
-    items.push_back(uiText(UiText::UsbTransfer));
-#endif
     items.push_back(uiText(UiText::PowerOff));
     display_.renderMenu(items, menuSelectedIndex_);
 }
@@ -6059,9 +5702,6 @@ void App::renderQuickSync() {
     std::vector<String> items;
     items.reserve(QuickSyncItemCount);
     items.push_back("Wi-Fi Sync");
-#if RSVP_USB_TRANSFER_ENABLED
-    items.push_back("USB Sync");
-#endif
     display_.renderMenu(items, quickSyncSelectedIndex_);
 }
 
@@ -6523,7 +6163,7 @@ void App::updateTimeEstimateBuild(uint32_t nowMs) {
         return;
     }
 
-    if (state_ == AppState::Playing || state_ == AppState::CompanionSync || state_ == AppState::UsbTransfer
+    if (state_ == AppState::Playing || state_ == AppState::CompanionSync
         || state_ == AppState::Standby || state_ == AppState::Sleeping) {
         return;
     }
@@ -6571,10 +6211,6 @@ void App::updateTimeEstimateBuild(uint32_t nowMs) {
             renderActiveReader(nowMs);
         }
     }
-}
-
-String App::timeEstimateModeLabel() const {
-    return uiText(accurateTimeEstimateEnabled_ ? UiText::TimeEstimateAccurate : UiText::TimeEstimateFast);
 }
 
 String App::formatReadingTimeRemaining(uint32_t remainingMs) const {
@@ -6643,11 +6279,6 @@ String App::formatFocusTimerRemaining(uint32_t nowMs) const {
     std::snprintf(buffer, sizeof(buffer), "%02lu:%02lu", static_cast<unsigned long>(minutes),
                   static_cast<unsigned long>(seconds));
     return String(buffer);
-}
-
-String App::focusTimerCountsLabel() const {
-    return "T" + String(focusTimer_.completedTouchBlocks()) + " W" + String(focusTimer_.completedWorkBlocks()) + " B"
-         + String(focusTimer_.completedBreakBlocks());
 }
 
 void App::playFocusTimerCompletionCue() {

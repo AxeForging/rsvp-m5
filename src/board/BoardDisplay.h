@@ -10,8 +10,6 @@ namespace Board::Display {
     void holdBacklightOffForDeepSleep();
     Board::UiOrientation defaultUiOrientation();
     Board::UiOrientation rotatedUiOrientation();
-    uint16_t nativeWidth();
-    uint16_t nativeHeight();
     size_t txChunkBytes();
     void setBacklight(bool on);
     void setBrightness(uint8_t percent);

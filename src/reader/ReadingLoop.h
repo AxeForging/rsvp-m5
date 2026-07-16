@@ -29,7 +29,6 @@ class ReadingLoop {
   void adjustWpm(int delta);
   void setWpm(uint16_t wpm);
   void setPacingConfig(const PacingConfig &config);
-  const PacingConfig &pacingConfig() const;
 
   const String &currentWord() const;
   String wordAt(size_t index) const;

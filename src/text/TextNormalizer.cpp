@@ -27,55 +27,6 @@ void trimAsciiWhitespace(String &text) {
   }
 }
 
-bool isUtf8Continuation(uint8_t value) { return (value & 0xC0) == 0x80; }
-
-bool decodeUtf8Codepoint(const String &text, size_t &index,
-                         uint32_t &codepoint) {
-  const uint8_t first = static_cast<uint8_t>(text[index++]);
-  if (first < 0x80) {
-    codepoint = first;
-    return true;
-  }
-
-  uint8_t continuationCount = 0;
-  uint32_t minimumValue = 0;
-  if ((first & 0xE0) == 0xC0) {
-    codepoint = first & 0x1F;
-    continuationCount = 1;
-    minimumValue = 0x80;
-  } else if ((first & 0xF0) == 0xE0) {
-    codepoint = first & 0x0F;
-    continuationCount = 2;
-    minimumValue = 0x800;
-  } else if ((first & 0xF8) == 0xF0) {
-    codepoint = first & 0x07;
-    continuationCount = 3;
-    minimumValue = 0x10000;
-  } else {
-    return false;
-  }
-
-  if (index + continuationCount > text.length()) {
-    return false;
-  }
-
-  for (uint8_t i = 0; i < continuationCount; ++i) {
-    const uint8_t next = static_cast<uint8_t>(text[index]);
-    if (!isUtf8Continuation(next)) {
-      return false;
-    }
-    ++index;
-    codepoint = (codepoint << 6) | (next & 0x3F);
-  }
-
-  if (codepoint < minimumValue || codepoint > 0x10FFFF ||
-      (codepoint >= 0xD800 && codepoint <= 0xDFFF)) {
-    return false;
-  }
-
-  return true;
-}
-
 void appendDisplayApproximation(String &target, uint32_t codepoint) {
   if (codepoint >= 32 && codepoint <= 126) {
     target += static_cast<char>(codepoint);
@@ -733,7 +684,7 @@ String normalizeDisplayText(const String &text, ParseStats *stats) {
   while (index < text.length()) {
     const size_t before = index;
     uint32_t codepoint = 0;
-    if (decodeUtf8Codepoint(text, index, codepoint)) {
+    if (CjkText::decodeUtf8At(text, index, codepoint)) {
       if (stats != nullptr && codepoint > 0x7F) {
         ++stats->nonAsciiCodepoints;
       }

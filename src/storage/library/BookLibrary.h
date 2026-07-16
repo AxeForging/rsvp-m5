@@ -12,8 +12,7 @@ namespace BookLibrary {
     };
 
     void clear(Listing& listing);
-    void refresh(Listing& listing, bool includeMetadata, bool onDeviceEpubConversionEnabled);
-    void printListing(const Listing& listing);
+    void refresh(Listing& listing, bool includeMetadata);
     size_t unsupportedFileCount();
 
     String pathAt(const Listing& listing, size_t index);

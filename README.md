@@ -6,7 +6,7 @@
 
 RSVP M5 is an open-source M5Stack reading device that shows text one word at a time using RSVP, Rapid Serial Visual Presentation. It is designed for small screens, SD card libraries, fast reading, and a simple browser-first workflow for converting and uploading books.
 
-RSVP M5 is a fork of [RSVP Nano](https://github.com/ionutdecebal/rsvpnano) by the RSVP Nano contributors, refocused for M5Stack hardware. Maintained under [AxeForging](https://tools.axeforge.io).
+RSVP M5 is an [AxeForge](https://tools.axeforge.io) project built for M5Stack Core2 hardware, with a CJK-capable font pipeline, a device-hosted Wi-Fi companion, and a browser-first workflow for converting and uploading books.
 
 ## What You Need
 
@@ -394,8 +394,7 @@ web/firmware/manifest.json
 
 ## Project Status
 
-RSVP M5 is the M5Stack Core2-focused fork. The multi-board targets from upstream have been removed,
-and development now tracks the single Core2 build.
+RSVP M5 targets the M5Stack Core2 exclusively, and development tracks that single build.
 
 The most recent reader work focuses on touch ergonomics and more resilient RSS downloads:
 
@@ -415,8 +414,12 @@ The next areas of work are:
 - A fuller browser-hosted companion experience for desktop and mobile.
 - More font and script support.
 
+## Acknowledgements
+
+RSVP M5 began from [RSVP Nano](https://github.com/ionutdecebal/rsvpnano) by the RSVP Nano contributors, and their MIT-licensed code lives on in this project. Thanks to them for the foundation.
+
 ## License
 
-MIT. See [LICENSE](LICENSE). © 2026 RSVP Nano contributors and AxeForging — RSVP M5 is a fork of [RSVP Nano](https://github.com/ionutdecebal/rsvpnano). Part of the [AxeForge](https://tools.axeforge.io) toolset.
+MIT. See [LICENSE](LICENSE). © 2026 AxeForging and RSVP Nano contributors. Part of the [AxeForge](https://tools.axeforge.io) toolset.
 
-The embedded OpenDyslexic and Atkinson Hyperlegible typeface assets are derived from the upstream projects and are included under the SIL Open Font License. See [third_party/opendyslexic/OFL.txt](third_party/opendyslexic/OFL.txt) and [third_party/atkinson-hyperlegible/OFL.txt](third_party/atkinson-hyperlegible/OFL.txt).
+The embedded OpenDyslexic and Atkinson Hyperlegible typeface assets are included under the SIL Open Font License. See [third_party/opendyslexic/OFL.txt](third_party/opendyslexic/OFL.txt) and [third_party/atkinson-hyperlegible/OFL.txt](third_party/atkinson-hyperlegible/OFL.txt).

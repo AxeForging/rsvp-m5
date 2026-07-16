@@ -30,10 +30,6 @@ Board::UiOrientation defaultUiOrientation() { return Board::UiOrientation::Portr
 
 Board::UiOrientation rotatedUiOrientation() { return Board::UiOrientation::PortraitFlipped; }
 
-uint16_t nativeWidth() { return static_cast<uint16_t>(M5.Display.width()); }
-
-uint16_t nativeHeight() { return static_cast<uint16_t>(M5.Display.height()); }
-
 size_t txChunkBytes() { return M5StackCore2::DisplayWiring::kTxChunkBytes; }
 
 void setBacklight(bool on) { M5.Display.setBrightness(on ? brightnessByte() : 0); }

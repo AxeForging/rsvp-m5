@@ -19,7 +19,6 @@ enum class UiText : uint8_t {
 	Chapters,
 	Library,
 	Settings,
-	UsbTransfer,
 	PowerOff,
 	Back,
 	Display,

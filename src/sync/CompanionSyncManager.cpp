@@ -153,7 +153,7 @@ ul{padding-left:20px}ul li{margin:5px 0}code{background:var(--surface3);border-r
 <div class="grid">
 <div class="card"><h2>Upload Book</h2>
 <p class="muted">For best EPUB/HTML/Markdown conversion, use the hosted web converter first, then upload the finished <code>.rsvp</code> file here wirelessly.</p>
-<label>Book file</label><input id="bookFileInput" type="file" accept=".rsvp,.txt,.epub">
+<label>Book file</label><input id="bookFileInput" type="file" accept=".rsvp,.txt">
 <p><button class="primary" id="uploadBookButton">Upload book</button></p>
 </div>
 <div class="card"><h2>Reader</h2><div id="infoBox" class="muted">No reader info yet.</div><p><button id="refreshBooksButton">Refresh books</button></p></div>
@@ -234,7 +234,7 @@ ul{padding-left:20px}ul li{margin:5px 0}code{background:var(--surface3);border-r
 <li><b>After that:</b> the reader joins your home network automatically. Keep your phone on the same Wi-Fi and open the address shown on the reader screen (or <code>rsvp-m5.local</code>) &mdash; your phone keeps its internet the whole time.</li>
 <li>Use Books for prepared book files and Articles for article drafts, article uploads, and synced articles.</li>
 <li>For best book conversion, use the hosted web converter/flasher first. This page is the wireless upload and settings companion, not the full conversion engine.</li>
-<li><code>.txt</code> and <code>.epub</code> uploads are accepted, but EPUB conversion is handled on the device when opened.</li>
+<li><code>.rsvp</code> and <code>.txt</code> uploads are accepted. Convert EPUB/HTML/Markdown with the hosted web converter first, then upload the finished <code>.rsvp</code>.</li>
 <li>Use Wi-Fi to save your home network for RSS and OTA. You can still use the on-device Wi-Fi keyboard if you prefer the standalone path.</li>
 <li>Use <code>/books/books</code> for books and <code>/books/articles</code> for articles. Files in <code>/books</code> still show up.</li>
 </ul>
@@ -317,8 +317,7 @@ String directiveValue(const String &line, const char *directive) {
 }
 
 bool isSupportedBookName(const String &loweredName) {
-  return loweredName.endsWith(".rsvp") || loweredName.endsWith(".txt") ||
-         loweredName.endsWith(".epub");
+  return loweredName.endsWith(".rsvp") || loweredName.endsWith(".txt");
 }
 
 String displayNameForPath(const String &path) {

@@ -13,7 +13,7 @@ Welcome to RSVP M5
 
 This reader shows one word at a time so your eyes stay still and your mind moves fast. Press the center button to play or pause. Press left to slow down and right to speed up. Swipe down from the top edge to open the menu.
 
-This welcome book is a language sampler: it shows every script the reader can display. To read your own books, copy .txt or .epub files onto the SD card, or use Sync to send them over Wi-Fi. You can delete this sampler any time to free space.
+This welcome book is a language sampler: it shows every script the reader can display. To read your own books, copy .rsvp or .txt files onto the SD card, or use Sync to send them over Wi-Fi. You can delete this sampler any time to free space.
 
 English
 

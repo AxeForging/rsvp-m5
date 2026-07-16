@@ -15,10 +15,6 @@ constexpr bool isDigit(char c) { return c >= '0' && c <= '9'; }
 
 constexpr bool isAlphaNumeric(char c) { return isAlpha(c) || isDigit(c); }
 
-constexpr bool isHexDigit(char c) {
-  return isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-}
-
 constexpr int hexValue(char c) {
   return isDigit(c)       ? c - '0'
          : c >= 'a' && c <= 'f' ? c - 'a' + 10

@@ -1,5 +1,5 @@
-# RSVP Nano localization source.
-# Edit this file, then run tools/generate_localization.py.
+# RSVP M5 localization source.
+# Edit this file, then run localization/generate_localization.py.
 # Keep ascii_only=true until the firmware font/rendering path supports accented glyphs reliably.
 schema_version = 1
 default_language = "English"
@@ -77,16 +77,6 @@ French = "Reglages"
 German = "Optionen"
 Romanian = "Setari"
 Polish = "Ustawienia"
-
-[[strings]]
-key = "UsbTransfer"
-context = "Main menu item for USB file transfer mode."
-English = "USB transfer"
-Spanish = "USB"
-French = "USB"
-German = "USB"
-Romanian = "USB"
-Polish = "USB"
 
 [[strings]]
 key = "PowerOff"

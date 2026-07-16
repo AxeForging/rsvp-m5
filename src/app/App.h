@@ -20,7 +20,6 @@
 #include "timer/FocusTimer.h"
 #include "ui/Localization.h"
 #include "update/OtaUpdater.h"
-#include "usb/UsbMassStorageManager.h"
 
 using TouchEvent = Input::Event;
 
@@ -211,19 +210,12 @@ private:
     bool handleTopEdgeMenuSwipe(const TouchEvent& event, uint32_t nowMs, int deltaX, int deltaY, bool ended);
     bool handleBottomEdgeQuickSettingsSwipe(const TouchEvent& event, uint32_t nowMs, int deltaX, int deltaY,
                                             bool ended);
-    void handleReaderTap(uint16_t x, uint16_t y, uint32_t nowMs);
-    bool handleFooterMetricTap(uint16_t x, uint16_t y, uint32_t nowMs);
-    bool handleBatteryBadgeTap(uint16_t x, uint16_t y, uint32_t nowMs);
-    bool handlePreviousSentenceTap(uint16_t x, uint16_t y, uint32_t nowMs);
     void rewindSentenceAction(uint32_t nowMs);
     void adjustReaderWpm(int delta, uint32_t nowMs);
     void requestReaderPauseAtSentenceEnd(uint32_t nowMs);
     void finalizeReaderPause(uint32_t nowMs);
     bool shouldFinalizeReaderPause(uint32_t nowMs) const;
     void resetReaderTapTracking();
-    bool isFooterMetricTap(uint16_t x, uint16_t y) const;
-    bool isBatteryBadgeTap(uint16_t x, uint16_t y) const;
-    bool isPreviousSentenceTap(uint16_t x, uint16_t y) const;
     // 0 = none/centre (normal tap), -1 = slower (bottom-left), +1 = faster (bottom-right).
     int bottomSpeedZone(uint16_t x, uint16_t y) const;
     bool isActivelyReading() const;
@@ -322,9 +314,6 @@ private:
     void enterCompanionSync(uint32_t nowMs, bool skipWifiPrompt = false);
     void updateCompanionSync(uint32_t nowMs);
     void exitCompanionSync(uint32_t nowMs);
-    void enterUsbTransfer(uint32_t nowMs);
-    void updateUsbTransfer(uint32_t nowMs);
-    void exitUsbTransfer(uint32_t nowMs);
     void enterStandby(uint32_t nowMs);
     void exitStandby(uint32_t nowMs);
     void seedStandbyScreensaver(uint32_t nowMs);
@@ -339,9 +328,6 @@ private:
     void seedStandbyScreenOff(uint32_t nowMs);
     void updateStandbyScreensaver(uint32_t nowMs, bool force = false);
     void enterPowerOff(uint32_t nowMs);
-    void enterSleep(uint32_t nowMs);
-    void wakeFromSleep();
-    bool restoreSavedBook(uint32_t nowMs);
     bool prepareBootBookLoad();
     void loadPendingBootBook(uint32_t nowMs);
     void saveReadingPosition(bool force = false);
@@ -352,11 +338,9 @@ private:
     struct BookOpenOptions {
         BookOpenOptions() :
                 allowIndexBuild(true),
-                allowEpubConversion(true),
                 rebuildTimeEstimate(true) {}
 
         bool allowIndexBuild;
-        bool allowEpubConversion;
         bool rebuildTimeEstimate;
     };
     bool loadBookAtIndex(size_t index, uint32_t nowMs, const BookOpenOptions& options = BookOpenOptions());
@@ -415,7 +399,6 @@ private:
     void updateTimeEstimateBuild(uint32_t nowMs);
     bool timeEstimateBuildMatchesCurrentBook() const;
     String formatReadingTimeRemaining(uint32_t remainingMs) const;
-    String timeEstimateModeLabel() const;
     uint8_t readingProgressPercent() const;
     bool ensureCurrentBookWordAvailable(uint32_t nowMs);
     void handleCurrentBookReadFailure(uint32_t nowMs, const char* detail);
@@ -449,7 +432,6 @@ private:
     DisplayManager::TypographyConfig effectiveTypographyConfig() const;
     uint32_t currentReaderContentToken() const;
     String formatFocusTimerRemaining(uint32_t nowMs) const;
-    String focusTimerCountsLabel() const;
     void playFocusTimerCompletionCue();
 
     AppState state_ = AppState::Booting;
@@ -462,7 +444,6 @@ private:
     OtaUpdater otaUpdater_;
     RssFeedManager rssFeedManager_;
     CompanionSyncManager companionSync_;
-    UsbMassStorageManager usbTransfer_;
     Preferences preferences_;
     PausedTouchSession pausedTouch_;
     TouchIntent pausedTouchIntent_ = TouchIntent::None;
@@ -476,7 +457,6 @@ private:
     uint32_t batteryRuntimeAnchorMs_ = 0;
     uint32_t lastScrollAnimationRenderMs_ = 0;
     uint32_t lastCompanionSyncRenderMs_ = 0;
-    uint32_t lastReaderTapMs_ = 0;
     uint32_t standbyEnteredMs_ = 0;
     uint32_t lastStandbyFrameMs_ = 0;
     uint32_t lastKeyButtonTapMs_ = 0;
@@ -559,8 +539,6 @@ private:
     uint8_t batteryRuntimeAnchorPercent_ = 0;
     uint32_t batteryRuntimeMinutesRemaining_ = 0;
     TextEntrySession textEntrySession_;
-    uint16_t lastReaderTapX_ = 0;
-    uint16_t lastReaderTapY_ = 0;
     bool inputInitialized_ = false;
     bool touchPlayHeld_ = false;
     bool playLocked_ = false;

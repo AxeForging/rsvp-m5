@@ -905,7 +905,7 @@ def pause_if_double_clicked() -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Convert supported books in an RSVP Nano SD card /books folder into .rsvp files."
+            "Convert supported books in an RSVP M5 SD card /books folder into .rsvp files."
         )
     )
     parser.add_argument(

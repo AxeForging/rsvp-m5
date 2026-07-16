@@ -10,8 +10,6 @@ void begin() { M5StackCore2Unified::ensureBegun(); }
 
 void prepareDeepSleepPowerHold() {}
 
-bool enableAudioPowerIfAvailable() { return false; }
-
 bool readBatteryStatus(BatteryStatus &status) {
   status = BatteryStatus{};
   const int32_t level = M5.Power.getBatteryLevel();      // 0..100, or -1 if unknown

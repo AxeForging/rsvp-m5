@@ -6,7 +6,6 @@ enum class AppState {
     Playing,
     Menu,
     CompanionSync,
-    UsbTransfer,
     Standby,
     Sleeping,
 };

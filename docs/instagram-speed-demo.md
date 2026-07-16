@@ -37,7 +37,7 @@ RSVP means rapid serial visual presentation.
 
 Text becomes focused motion.
 
-John Decebal made this reader.
+AxeForge made this reader.
 
 It is open source and pocketable.
 

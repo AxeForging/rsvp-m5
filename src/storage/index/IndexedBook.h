@@ -15,7 +15,6 @@ namespace IndexedBook {
         String* loadedPath = nullptr;
         size_t* loadedIndex = nullptr;
         bool allowIndexBuild = true;
-        bool allowEpubConversion = true;
         StatusCallback statusCallback = nullptr;
         void* statusContext = nullptr;
     };

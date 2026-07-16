@@ -11,7 +11,6 @@ namespace Board::Power {
 
     void begin();
     void prepareDeepSleepPowerHold();
-    bool enableAudioPowerIfAvailable();
     bool readBatteryStatus(BatteryStatus& status);
     DiagnosticSnapshot diagnosticSnapshot();
     bool externalPowerPresent();

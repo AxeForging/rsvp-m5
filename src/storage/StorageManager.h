@@ -18,19 +18,16 @@ public:
         IndexedBookLoadOptions() :
                 loadedPath(nullptr),
                 loadedIndex(nullptr),
-                allowIndexBuild(true),
-                allowEpubConversion(true) {}
+                allowIndexBuild(true) {}
 
         String* loadedPath;
         size_t* loadedIndex;
         bool allowIndexBuild;
-        bool allowEpubConversion;
     };
 
     void setStatusCallback(StatusCallback callback, void* context);
     bool begin();
     void end();
-    void listBooks();
     void refreshBooks(bool includeMetadata = true);
     bool loadIndexedBook(size_t index, IndexedBookStore& store, BookMetadata& metadata,
                          const IndexedBookLoadOptions& options = IndexedBookLoadOptions());
@@ -50,7 +47,6 @@ private:
     void clearBookCache();
 
     bool mounted_ = false;
-    bool listedOnce_ = false;
     StatusCallback statusCallback_ = &StorageManager::ignoreStatus;
     void* statusContext_ = nullptr;
     BookLibrary::Listing library_;

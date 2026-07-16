@@ -9,10 +9,6 @@
 #include "storage/fs/StoragePaths.h"
 #include "storage/index/IndexedBook.h"
 
-#ifndef RSVP_ON_DEVICE_EPUB_CONVERSION
-#define RSVP_ON_DEVICE_EPUB_CONVERSION 0
-#endif
-
 #ifdef RSVP_SEED_SAMPLE_BOOK
 #include "platforms/m5stack_core2/SeedBook.h"
 #endif
@@ -89,7 +85,6 @@ void StorageManager::setStatusCallback(StatusCallback callback, void* context) {
 
 bool StorageManager::begin() {
     mounted_ = false;
-    listedOnce_ = false;
     clearBookCache();
 
     statusCallback_(statusContext_, "SD", "Mounting card", "", 5);
@@ -105,7 +100,7 @@ bool StorageManager::begin() {
 #ifdef RSVP_SEED_SAMPLE_BOOK
         seedSampleBook();
 #endif
-        statusCallback_(statusContext_, "SD", "Scanning books", "EPUB converts on open", 10);
+        statusCallback_(statusContext_, "SD", "Scanning books", "", 10);
         refreshBookPaths(false);
         return true;
     }
@@ -119,30 +114,7 @@ void StorageManager::end() {
         Board::Storage::end();
     }
     mounted_ = false;
-    listedOnce_ = false;
     clearBookCache();
-}
-
-void StorageManager::listBooks() {
-    if (!mounted_ || listedOnce_) {
-        return;
-    }
-    listedOnce_ = true;
-
-    if (!StorageFiles::directoryExists(StoragePaths::kBooksPath)) {
-        Serial.println("[storage] /books directory not found");
-        return;
-    }
-
-    if (library_.paths.empty()) {
-        refreshBookPaths();
-    }
-    if (library_.paths.empty()) {
-        Serial.println("[storage] No readable .rsvp, .txt, or .epub books found under /books");
-        return;
-    }
-
-    BookLibrary::printListing(library_);
 }
 
 void StorageManager::refreshBooks(bool includeMetadata) {
@@ -181,7 +153,6 @@ bool StorageManager::loadIndexedBook(size_t index, IndexedBookStore& store, Book
     request.loadedPath = options.loadedPath;
     request.loadedIndex = options.loadedIndex;
     request.allowIndexBuild = options.allowIndexBuild;
-    request.allowEpubConversion = options.allowEpubConversion;
     request.statusCallback = statusCallback_;
     request.statusContext = statusContext_;
     return IndexedBook::load(index, library_, store, metadata, request);
@@ -197,7 +168,7 @@ StorageManager::DiagnosticResult StorageManager::diagnoseSdCard() {
     {
         // Refresh the library view used by both diagnostics and the app facade.
         statusCallback_(statusContext_, "SD check", "Scanning /books", "", 45);
-        BookLibrary::refresh(library_, true, RSVP_ON_DEVICE_EPUB_CONVERSION);
+        BookLibrary::refresh(library_, true);
         result.bookCount = library_.paths.size();
         result.unsupportedCount = BookLibrary::unsupportedFileCount();
     }
@@ -213,7 +184,7 @@ StorageManager::DiagnosticResult StorageManager::diagnoseSdCard() {
     if (result.bookCount == 0) {
         result.summary = "No books found";
         if (result.unsupportedCount > 0) {
-            result.detail = "Use .rsvp .txt .epub";
+            result.detail = "Use .rsvp .txt";
         } else {
             result.detail = "Upload to /books/books";
         }
@@ -240,7 +211,7 @@ void StorageManager::refreshBookPaths(bool includeMetadata) {
     }
 
     statusCallback_(statusContext_, "SD", "Reading library", "", 96);
-    BookLibrary::refresh(library_, includeMetadata, RSVP_ON_DEVICE_EPUB_CONVERSION);
+    BookLibrary::refresh(library_, includeMetadata);
 }
 
 void StorageManager::clearBookCache() {

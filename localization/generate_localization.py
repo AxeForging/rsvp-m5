@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate RSVP Nano localization C++ from localization/strings.toml.
+"""Generate RSVP M5 localization C++ from localization/strings.toml.
 
 The firmware output stays intentionally tiny:
 - UiLanguage and UiText enums generated from TOML order
@@ -584,7 +584,7 @@ def print_diff(path: Path, actual: str, expected: str) -> None:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-	parser = argparse.ArgumentParser(description="Generate RSVP Nano localization C++ from TOML.")
+	parser = argparse.ArgumentParser(description="Generate RSVP M5 localization C++ from TOML.")
 	parser.add_argument("--toml", type=Path, default=DEFAULT_TOML)
 	parser.add_argument("--header", type=Path, default=DEFAULT_HEADER)
 	parser.add_argument("--cpp", type=Path, default=DEFAULT_CPP)

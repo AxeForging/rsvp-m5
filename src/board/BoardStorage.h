@@ -3,14 +3,6 @@
 #include <Arduino.h>
 #include <FS.h>
 
-#ifndef RSVP_USB_TRANSFER_ENABLED
-#define RSVP_USB_TRANSFER_ENABLED 0
-#endif
-
-#if RSVP_USB_TRANSFER_ENABLED
-#include <driver/sdmmc_host.h>
-#endif
-
 namespace Board::Storage {
 
     enum class CardType : uint8_t {
@@ -27,8 +19,5 @@ namespace Board::Storage {
     CardType cardType();
     bool supportsFrequencySelection();
     bool setSdMmcPins();
-#if RSVP_USB_TRANSFER_ENABLED
-    void configureSdMmcSlot(sdmmc_slot_config_t& slotConfig);
-#endif
 
 } // namespace Board::Storage

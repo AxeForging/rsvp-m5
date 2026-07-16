@@ -941,11 +941,6 @@ void DisplayManager::setUiOrientation(Board::UiOrientation orientation) {
   lastRenderKey_ = "";
 }
 
-void DisplayManager::setUiRotated180(bool rotated180) {
-  setUiOrientation(rotated180 ? Board::Display::rotatedUiOrientation()
-                              : Board::Display::defaultUiOrientation());
-}
-
 void DisplayManager::setTypographyConfig(const TypographyConfig &config) {
   TypographyConfig next;
   next.typeface = sanitizeReaderTypeface(config.typeface);
@@ -968,14 +963,6 @@ void DisplayManager::setTypographyConfig(const TypographyConfig &config) {
   tickerPlaybackFrameActive_ = false;
   lastRenderKey_ = "";
 }
-
-DisplayManager::TypographyConfig DisplayManager::typographyConfig() const {
-  return activeTypographyConfig();
-}
-
-bool DisplayManager::darkMode() const { return darkMode_; }
-
-bool DisplayManager::nightMode() const { return nightMode_; }
 
 bool DisplayManager::begin() {
   ESP_LOGI(kDisplayTag, "Begin");
@@ -1253,22 +1240,6 @@ String DisplayManager::fitTinyText(const String &text, int maxWidth, int scale) 
     fitted.remove(fitted.length() - 1, 1);
   }
   return fitted.isEmpty() ? ellipsis : fitted + ellipsis;
-}
-
-String DisplayManager::fitTinyTextTrailing(const String &text, int maxWidth, int scale) const {
-  if (measureTinyTextWidth(text, scale) <= maxWidth) {
-    return text;
-  }
-
-  String fitted = text;
-  const String ellipsis = "...";
-  while (!fitted.isEmpty() && measureTinyTextWidth(ellipsis + fitted, scale) > maxWidth) {
-    fitted.remove(0, 1);
-  }
-  while (!fitted.isEmpty() && fitted[0] == ' ') {
-    fitted.remove(0, 1);
-  }
-  return fitted.isEmpty() ? ellipsis : ellipsis + fitted;
 }
 
 void DisplayManager::drawGlyph(int x, int y, char c, uint16_t color) {
@@ -1584,19 +1555,6 @@ void DisplayManager::drawTinyTextCentered(const String &text, int y, uint16_t co
   drawTinyTextAt(text, std::max(xOffset, xOffset + ((width - textWidth) / 2)), y, color, scale);
 }
 
-void DisplayManager::drawSerif70TextCentered(const String &text, int y, uint16_t color, int width,
-                                             int xOffset) {
-  const int textWidth = measureSerif70TextWidth(text);
-  drawSerif70TextAt(text, std::max(xOffset, xOffset + ((width - textWidth) / 2)), y, color);
-}
-
-void DisplayManager::drawSerifTextScaledCentered(const String &text, int y, uint16_t color,
-                                                 uint8_t scalePercent, int width, int xOffset) {
-  const int textWidth = measureSerifTextWidthScaled(text, scalePercent);
-  drawSerifTextScaledAt(text, std::max(xOffset, xOffset + ((width - textWidth) / 2)), y, color,
-                        scalePercent);
-}
-
 void DisplayManager::drawBatteryBadge() {
   drawBatteryBadge(kDisplayWidth, kDisplayHeight);
 }
@@ -1874,10 +1832,6 @@ void DisplayManager::drawWordLine(const String &word, int y, uint16_t color) {
   drawWordAt(word, x, y, color);
 }
 
-void DisplayManager::drawMenuItem(const String &item, int y, bool selected) {
-  drawWordLine(item, y, selected ? focusColor() : dimColor());
-}
-
 void DisplayManager::applyBrightness() {
   Board::Display::setBrightness(brightnessPercent_);
   Board::Display::setBacklight(true);
@@ -2039,51 +1993,6 @@ void DisplayManager::renderRsvpWord(const String &word, const String &chapterLab
   flushScaledFrame(scale, virtualWidth, virtualHeight);
 }
 
-void DisplayManager::renderRsvpWordWithWpm(const String &word, uint16_t wpm,
-                                           const String &chapterLabel, uint8_t progressPercent,
-                                           bool showFooter, const String &footerStatusLabel,
-                                           ReaderChrome chrome) {
-  const String wpmText = String(wpm) + " WPM";
-  const String renderKey =
-      "rsvp_wpm|" + word + "|" + wpmText + "|" + chapterLabel + "|" +
-      String(progressPercent) + "|" + String(showFooter ? 1 : 0) + "|f:" + footerStatusLabel +
-      "|b:" + batteryLabel_ + "|rc:" + readerChromeKey(chrome) + "|d:" +
-      String(darkMode_ ? 1 : 0) + "|n:" + String(nightMode_ ? 1 : 0);
-  if (!initialized_ || renderKey == lastRenderKey_) {
-    return;
-  }
-
-  lastRenderKey_ = renderKey;
-
-  const int scale = 1;
-  const int virtualWidth = kDisplayWidth;
-  const int virtualHeight = kDisplayHeight;
-  const int glyphHeight = baseGlyphHeightForTypeface(effectiveReaderTypefaceForText(word));
-  const int wordY = std::max(0, (virtualHeight - glyphHeight) / 2);
-  const int wpmY =
-      std::max(0, virtualHeight - kTinyGlyphHeight * kTinyScale - kWpmFeedbackBottomMargin - 24);
-  const int focusIndex = findFocusLetterIndex(word);
-  const int x = rsvpStartX(word, focusIndex, virtualWidth, 1, false);
-  const int anchorX = (virtualWidth * currentAnchorPercent()) / 100;
-
-  clearVirtualBuffer(virtualWidth, virtualHeight);
-  drawRsvpAnchorGuide(anchorX, wordY, glyphHeight);
-  drawRsvpWordAt(word, x, wordY, focusIndex);
-  drawTinyTextCentered(wpmText, wpmY, focusColor(), kTinyScale);
-  if (showFooter) {
-    drawFooter(chapterLabel, footerStatusLabel.isEmpty() ? String(progressPercent) + "%"
-                                                         : footerStatusLabel,
-               chrome);
-  }
-  if (chrome.showPreviousSentenceHint) {
-    drawPreviousSentenceHint(chrome.playing);
-  }
-  if (chrome.showBattery) {
-    drawBatteryBadge();
-  }
-  flushScaledFrame(scale, virtualWidth, virtualHeight);
-}
-
 namespace {
 
 // efont is a 24px bitmap and its max size; scaling it up is nearest-neighbour and looks jagged, so
@@ -2152,13 +2061,15 @@ bool isCjkText(const String &s) {
 constexpr const char *kCjkVlwPath = "/fonts/cjk.vlw";
 const lgfx::IFont *gCjkVlw = nullptr;
 bool gCjkVlwBad = false;
+bool gCjkVlwMissing = false;  // stat'd once, absent -- don't re-stat the SD on every word-flip
 
 const lgfx::IFont *cjkVlwFont() {
-  if (gCjkVlw != nullptr || gCjkVlwBad) {
+  if (gCjkVlw != nullptr || gCjkVlwBad || gCjkVlwMissing) {
     return gCjkVlw;
   }
   if (!SD.exists(kCjkVlwPath)) {
-    return nullptr;  // not downloaded yet -- re-check on a later render (efont fallback meanwhile)
+    gCjkVlwMissing = true;  // cleared by resetCjkFontCache() after a font download; else efont meanwhile
+    return nullptr;
   }
   const lgfx::IFont *previous = M5.Display.getFont();
   if (M5.Display.loadFont(SD, kCjkVlwPath)) {  // concrete SDFS -> valid DataWrapperT
@@ -2194,6 +2105,13 @@ void drawCjkSegment(const lgfx::IFont *font, const String &utf8, int x, int yTop
 }
 
 }  // namespace
+
+// Drop the "VLW absent" negative cache so the next CJK render re-stats the SD. Call after a font
+// download completes; otherwise the reader stays on the efont fallback until reboot.
+void DisplayManager::resetCjkFontCache() {
+  gCjkVlwMissing = false;
+  gCjkVlwBad = false;
+}
 
 // CJK reader frame. The reader's own fonts are byte-indexed (Latin only), so CJK words draw with the
 // bundled M5GFX Unicode font straight onto the panel: build background + chrome + anchor ticks into
@@ -2367,234 +2285,6 @@ void DisplayManager::renderPhantomRsvpWord(const String &beforeText, const Strin
     drawBatteryBadge();
   }
   flushScaledFrame(scale, virtualWidth, virtualHeight);
-}
-
-void DisplayManager::renderWordTickerView(const std::vector<ContextWord> &words,
-                                          size_t currentWordIndex, uint8_t fontSizeLevel,
-                                          uint16_t motionPermille, const String &chapterLabel,
-                                          uint8_t progressPercent, const String &overlayText,
-                                          bool showFooter, ReaderChrome chrome) {
-  if (words.empty()) {
-    renderRsvpWord("", chapterLabel, progressPercent, showFooter, "", chrome);
-    return;
-  }
-  if (currentWordIndex >= words.size()) {
-    currentWordIndex = words.size() - 1;
-  }
-  if (motionPermille > 1000) {
-    motionPermille = 1000;
-  }
-
-  const bool canUseBandOnly = !showFooter && overlayText.isEmpty() &&
-                              !chrome.showPreviousSentenceHint && tickerPlaybackFrameActive_;
-  const String chromeKey = readerChromeKey(chrome);
-  String renderKey;
-  renderKey.reserve(96 + chromeKey.length() + chapterLabel.length() + overlayText.length() +
-                    batteryLabel_.length());
-  renderKey += "ticker|";
-  renderKey += String(fontSizeLevel);
-  renderKey += "|i:";
-  renderKey += String(currentWordIndex);
-  renderKey += "|m:";
-  renderKey += String(motionPermille);
-  renderKey += "|f:";
-  renderKey += String(showFooter ? 1 : 0);
-  renderKey += "|d:";
-  renderKey += String(darkMode_ ? 1 : 0);
-  renderKey += "|n:";
-  renderKey += String(nightMode_ ? 1 : 0);
-  renderKey += "|wc:";
-  renderKey += String(words.size());
-  renderKey += "|rc:";
-  renderKey += chromeKey;
-  if (!canUseBandOnly) {
-    renderKey += "|c:";
-    renderKey += chapterLabel;
-    renderKey += "|p:";
-    renderKey += String(progressPercent);
-    renderKey += "|o:";
-    renderKey += overlayText;
-    renderKey += "|b:";
-    renderKey += batteryLabel_;
-  }
-  const size_t keyStart = currentWordIndex > 2 ? currentWordIndex - 2 : 0;
-  const size_t keyEnd = std::min(words.size(), currentWordIndex + 3);
-  for (size_t index = keyStart; index < keyEnd; ++index) {
-    renderKey += "|";
-    renderKey += words[index].text;
-  }
-  if (!initialized_ || renderKey == lastRenderKey_) {
-    return;
-  }
-
-  lastRenderKey_ = renderKey;
-
-  const int scale = 1;
-  const int virtualWidth = kDisplayWidth;
-  const int virtualHeight = kDisplayHeight;
-  const int overlayY =
-      std::max(0, virtualHeight - kTinyGlyphHeight * kTinyScale - kWpmFeedbackBottomMargin - 24);
-  const uint16_t textColor = wordColor();
-
-  if (fontSizeLevel == 1) {
-    auto layoutFor = [&](size_t index) { return serif70WordLayout(words[index].text, -1); };
-    auto widthFor = [&](const TextLayoutMetrics &layout) { return textLayoutWidth(layout); };
-
-    const int gap = kWordTickerGapMedium;
-    const int mediumHeight =
-        mediumGlyphHeightForTypeface(effectiveReaderTypefaceForText(words[currentWordIndex].text));
-    const int textY = std::max(0, (virtualHeight - mediumHeight) / 2);
-    const TextLayoutMetrics currentLayout = layoutFor(currentWordIndex);
-    const int currentWidth = widthFor(currentLayout);
-    const int currentLeftBase = (virtualWidth - currentWidth) / 2;
-    int shiftX = 0;
-    if (currentWordIndex + 1 < words.size()) {
-      const int nextWidth = widthFor(layoutFor(currentWordIndex + 1));
-      const int travel = gap + (currentWidth / 2) + (nextWidth / 2);
-      shiftX = static_cast<int>((static_cast<int32_t>(travel) * motionPermille) / 1000);
-    }
-
-    const int bandTop = std::max(0, textY - kWordTickerBandPadding);
-    const int bandBottom =
-        std::min(virtualHeight, textY + mediumHeight + kWordTickerBandPadding);
-    if (canUseBandOnly) {
-      fillVirtualRect(0, bandTop, virtualWidth, bandBottom - bandTop, backgroundColor());
-    } else {
-      clearVirtualBuffer(virtualWidth, virtualHeight);
-    }
-    int left = currentLeftBase - shiftX;
-    int originX = left - currentLayout.minX;
-    drawSerif70TextAt(words[currentWordIndex].text, originX, textY, textColor);
-
-    int nextLeft = left + currentWidth + gap;
-    for (size_t index = currentWordIndex + 1; index < words.size(); ++index) {
-      if (nextLeft >= virtualWidth + gap) {
-        break;
-      }
-      const TextLayoutMetrics layout = layoutFor(index);
-      const int width = widthFor(layout);
-      originX = nextLeft - layout.minX;
-      drawSerif70TextAt(words[index].text, originX, textY, textColor);
-      nextLeft += width + gap;
-    }
-
-    int prevRight = left - gap;
-    for (size_t index = currentWordIndex; index > 0;) {
-      --index;
-      if (prevRight <= -gap) {
-        break;
-      }
-      const TextLayoutMetrics layout = layoutFor(index);
-      const int width = widthFor(layout);
-      const int prevLeft = prevRight - width;
-      originX = prevLeft - layout.minX;
-      drawSerif70TextAt(words[index].text, originX, textY, textColor);
-      prevRight = prevLeft - gap;
-    }
-    if (!overlayText.isEmpty()) {
-      drawTinyTextCentered(overlayText, overlayY, focusColor(), kTinyScale);
-    }
-    if (showFooter) {
-      drawFooter(chapterLabel, String(progressPercent) + "%", chrome);
-    }
-    if (chrome.showPreviousSentenceHint) {
-      drawPreviousSentenceHint(chrome.playing);
-    }
-    if (!canUseBandOnly) {
-      if (chrome.showBattery) {
-        drawBatteryBadge();
-      }
-      flushScaledFrame(scale, virtualWidth, virtualHeight);
-      tickerPlaybackFrameActive_ = !showFooter && overlayText.isEmpty();
-    } else {
-      flushFullWidthLogicalBand(bandTop, bandBottom);
-    }
-    return;
-  }
-
-  const ReaderTextStyle style = readerTextStyle(fontSizeLevel);
-  auto layoutFor = [&](size_t index) {
-    return serifWordLayoutScaledPercent(words[index].text, -1, style.scalePercent);
-  };
-  auto widthFor = [&](const TextLayoutMetrics &layout) { return textLayoutWidth(layout); };
-
-  int gap = kWordTickerGapLarge;
-  if (fontSizeLevel == 1) {
-    gap = kWordTickerGapMedium;
-  } else if (fontSizeLevel >= 2) {
-    gap = kWordTickerGapSmall;
-  }
-  gap = std::max(4, scaledPercentDimension(gap, style.scalePercent));
-
-  const int textHeight = scaledPercentDimension(
-      baseGlyphHeightForTypeface(effectiveReaderTypefaceForText(words[currentWordIndex].text)),
-      style.scalePercent);
-  const int textY = std::max(0, (virtualHeight - textHeight) / 2);
-  const TextLayoutMetrics currentLayout = layoutFor(currentWordIndex);
-  const int currentWidth = widthFor(currentLayout);
-  const int currentLeftBase = (virtualWidth - currentWidth) / 2;
-  int shiftX = 0;
-  if (currentWordIndex + 1 < words.size()) {
-    const int nextWidth = widthFor(layoutFor(currentWordIndex + 1));
-    const int travel = gap + (currentWidth / 2) + (nextWidth / 2);
-    shiftX = static_cast<int>((static_cast<int32_t>(travel) * motionPermille) / 1000);
-  }
-
-  const int bandTop = std::max(0, textY - kWordTickerBandPadding);
-  const int bandBottom = std::min(virtualHeight, textY + textHeight + kWordTickerBandPadding);
-  if (canUseBandOnly) {
-    fillVirtualRect(0, bandTop, virtualWidth, bandBottom - bandTop, backgroundColor());
-  } else {
-    clearVirtualBuffer(virtualWidth, virtualHeight);
-  }
-  int left = currentLeftBase - shiftX;
-  int originX = left - currentLayout.minX;
-  drawSerifTextScaledAt(words[currentWordIndex].text, originX, textY, textColor,
-                        style.scalePercent);
-
-  int nextLeft = left + currentWidth + gap;
-  for (size_t index = currentWordIndex + 1; index < words.size(); ++index) {
-    if (nextLeft >= virtualWidth + gap) {
-      break;
-    }
-    const TextLayoutMetrics layout = layoutFor(index);
-    const int width = widthFor(layout);
-    originX = nextLeft - layout.minX;
-    drawSerifTextScaledAt(words[index].text, originX, textY, textColor, style.scalePercent);
-    nextLeft += width + gap;
-  }
-
-  int prevRight = left - gap;
-  for (size_t index = currentWordIndex; index > 0;) {
-    --index;
-    if (prevRight <= -gap) {
-      break;
-    }
-    const TextLayoutMetrics layout = layoutFor(index);
-    const int width = widthFor(layout);
-    const int prevLeft = prevRight - width;
-    originX = prevLeft - layout.minX;
-    drawSerifTextScaledAt(words[index].text, originX, textY, textColor, style.scalePercent);
-    prevRight = prevLeft - gap;
-  }
-  if (!overlayText.isEmpty()) {
-    drawTinyTextCentered(overlayText, overlayY, focusColor(), kTinyScale);
-  }
-  if (showFooter) {
-    drawFooter(chapterLabel, String(progressPercent) + "%", chrome);
-  }
-  if (chrome.showPreviousSentenceHint) {
-    drawPreviousSentenceHint(chrome.playing);
-  }
-  if (!canUseBandOnly) {
-    if (chrome.showBattery) {
-      drawBatteryBadge();
-    }
-    flushScaledFrame(scale, virtualWidth, virtualHeight);
-    tickerPlaybackFrameActive_ = !showFooter && overlayText.isEmpty();
-  } else {
-    flushFullWidthLogicalBand(bandTop, bandBottom);
-  }
 }
 
 void DisplayManager::renderTypographyPreview(const String &beforeText, const String &word,

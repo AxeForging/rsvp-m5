@@ -172,8 +172,6 @@ bool FocusTimer::isActiveTimerRunning() const { return timerRunning_; }
 
 FocusTimer::State FocusTimer::state() const { return state_; }
 
-FocusTimer::Genre FocusTimer::genre() const { return genre_; }
-
 Board::UiOrientation FocusTimer::uiOrientation() const {
   switch (state_) {
     case State::GenreSelect:
@@ -229,24 +227,6 @@ bool FocusTimer::consumeCompletionCue() {
   const bool pending = completionCuePending_;
   completionCuePending_ = false;
   return pending;
-}
-
-const char *FocusTimer::genreLabel(Genre genre) {
-  switch (genre) {
-    case Genre::Chores:
-      return "Chores";
-    case Genre::RsvpNano:
-      return "Work";
-    case Genre::StrengthLabs:
-      return "Fitness";
-    case Genre::SelfCare:
-      return "Self Care";
-    case Genre::Other:
-      return "Other";
-    case Genre::None:
-    default:
-      return "";
-  }
 }
 
 bool FocusTimer::initImu() {

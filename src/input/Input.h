@@ -72,10 +72,6 @@ constexpr bool hasControl(ControlMask controls, ControlMask control) {
   return (controls & control) != 0;
 }
 
-constexpr bool hasControls(ControlMask controls, ControlMask required) {
-  return (controls & required) == required;
-}
-
 constexpr bool isTouchEvent(const Event &event) {
   return hasControl(event.controls, InputTouch);
 }
