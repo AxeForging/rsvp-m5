@@ -805,3 +805,331 @@ Polish = "Sync"
 Japanese = "同期"
 Chinese = "同步"
 Korean = "동기화"
+
+[[strings]]
+key = "Installed"
+context = "Settings label: installed firmware version."
+English = "Installed"
+Japanese = "インストール"
+Chinese = "已安装"
+Korean = "설치됨"
+
+[[strings]]
+key = "SdCardCheck"
+context = "Settings action: run the SD card check."
+English = "SD card check"
+Japanese = "SD確認"
+Chinese = "SD卡检查"
+Korean = "SD 점검"
+
+[[strings]]
+key = "FirmwareUpdate"
+context = "Settings action: check for a firmware update."
+English = "Firmware update"
+Japanese = "更新確認"
+Chinese = "检查更新"
+Korean = "업데이트 확인"
+
+[[strings]]
+key = "ReaderHand"
+context = "Settings label: left/right handedness."
+English = "Hand"
+Japanese = "利き手"
+Chinese = "惯用手"
+Korean = "손잡이"
+
+[[strings]]
+key = "ScreenSaver"
+context = "Settings label: screensaver mode."
+English = "Screen saver"
+Japanese = "画面保護"
+Chinese = "屏保"
+Korean = "화면보호"
+
+[[strings]]
+key = "StandbyTimer"
+context = "Settings label: standby timer duration."
+English = "Standby"
+Japanese = "待機"
+Chinese = "待机"
+Korean = "대기"
+
+[[strings]]
+key = "ProgressLabel"
+context = "Settings label: footer progress metric."
+English = "Progress"
+Japanese = "進捗"
+Chinese = "进度"
+Korean = "진행"
+
+[[strings]]
+key = "BatteryLabel"
+context = "Settings label: battery readout mode."
+English = "Battery label"
+Japanese = "電池表示"
+Chinese = "电量"
+Korean = "배터리"
+
+[[strings]]
+key = "ReadingBattery"
+context = "Settings label: show battery while reading."
+English = "Reading battery"
+Japanese = "読書中電池"
+Chinese = "阅读电量"
+Korean = "읽기 배터리"
+
+[[strings]]
+key = "ReadingChapter"
+context = "Settings label: show chapter while reading."
+English = "Reading chapter"
+Japanese = "読書中の章"
+Chinese = "阅读章节"
+Korean = "읽기 챕터"
+
+[[strings]]
+key = "ReadingProgress"
+context = "Settings label: show progress while reading."
+English = "Reading progress"
+Japanese = "読書中進捗"
+Chinese = "阅读进度"
+Korean = "읽기 진행"
+
+[[strings]]
+key = "PauseMode"
+context = "Settings label: pause behaviour."
+English = "Pause mode"
+Japanese = "一時停止"
+Chinese = "暂停"
+Korean = "일시정지"
+
+[[strings]]
+key = "BaseSpeed"
+context = "Settings label: base reading speed (WPM)."
+English = "Base speed"
+Japanese = "基本速度"
+Chinese = "基础速度"
+Korean = "기본 속도"
+
+[[strings]]
+key = "Network"
+context = "Settings label: Wi-Fi network."
+English = "Network"
+Japanese = "ネットワーク"
+Chinese = "网络"
+Korean = "네트워크"
+
+[[strings]]
+key = "AutoOta"
+context = "Settings label: automatic OTA update checks."
+English = "Auto OTA"
+Japanese = "自動更新"
+Chinese = "自动更新"
+Korean = "자동 업데이트"
+
+[[strings]]
+key = "OtaOwner"
+context = "Settings label: OTA release owner."
+English = "OTA owner"
+Japanese = "更新元"
+Chinese = "更新源"
+Korean = "업데이트 소스"
+
+[[strings]]
+key = "OtaTag"
+context = "Settings label: OTA release tag."
+English = "OTA tag"
+Japanese = "更新タグ"
+Chinese = "更新标签"
+Korean = "업데이트 태그"
+
+[[strings]]
+key = "ChooseNetwork"
+context = "Settings action: choose a Wi-Fi network."
+English = "Choose network"
+Japanese = "接続先選択"
+Chinese = "选择网络"
+Korean = "네트워크 선택"
+
+[[strings]]
+key = "ForgetNetwork"
+context = "Settings action: forget the saved Wi-Fi network."
+English = "Forget network"
+Japanese = "接続先削除"
+Chinese = "忘记网络"
+Korean = "네트워크 삭제"
+
+[[strings]]
+key = "HandLeft"
+context = "Handedness value: left."
+English = "Left"
+Japanese = "左"
+Chinese = "左"
+Korean = "왼손"
+
+[[strings]]
+key = "HandRight"
+context = "Handedness value: right."
+English = "Right"
+Japanese = "右"
+Chinese = "右"
+Korean = "오른손"
+
+[[strings]]
+key = "SaverMaze"
+context = "Screensaver mode: maze."
+English = "Maze"
+Japanese = "迷路"
+Chinese = "迷宫"
+Korean = "미로"
+
+[[strings]]
+key = "SaverVoronoi"
+context = "Screensaver mode: voronoi."
+English = "Voronoi"
+Japanese = "ボロノイ"
+Chinese = "沃罗诺伊"
+Korean = "보로노이"
+
+[[strings]]
+key = "SaverScreenOff"
+context = "Screensaver mode: screen off."
+English = "Screen off"
+Japanese = "画面オフ"
+Chinese = "关屏"
+Korean = "화면 끄기"
+
+[[strings]]
+key = "SaverLife"
+context = "Screensaver mode: game of life."
+English = "Life"
+Japanese = "ライフ"
+Chinese = "生命游戏"
+Korean = "라이프"
+
+[[strings]]
+key = "MetricChapterTime"
+context = "Footer metric: chapter time remaining."
+English = "Chapter time"
+Japanese = "章の時間"
+Chinese = "章节时间"
+Korean = "챕터 시간"
+
+[[strings]]
+key = "MetricBookTime"
+context = "Footer metric: book time remaining."
+English = "Book time"
+Japanese = "本の時間"
+Chinese = "全书时间"
+Korean = "책 시간"
+
+[[strings]]
+key = "MetricPercentRead"
+context = "Footer metric: percent read."
+English = "Percent read"
+Japanese = "読了率"
+Chinese = "阅读百分比"
+Korean = "읽은 비율"
+
+[[strings]]
+key = "BatteryTimeRemaining"
+context = "Battery readout: time remaining."
+English = "Time remaining"
+Japanese = "残り時間"
+Chinese = "剩余时间"
+Korean = "남은 시간"
+
+[[strings]]
+key = "BatteryVoltage"
+context = "Battery readout: voltage."
+English = "Voltage"
+Japanese = "電圧"
+Chinese = "电压"
+Korean = "전압"
+
+[[strings]]
+key = "BatteryPercentage"
+context = "Battery readout: percentage."
+English = "Percentage"
+Japanese = "パーセント"
+Chinese = "百分比"
+Korean = "퍼센트"
+
+[[strings]]
+key = "PauseInstant"
+context = "Pause mode: instant."
+English = "Instant"
+Japanese = "即時"
+Chinese = "立即"
+Korean = "즉시"
+
+[[strings]]
+key = "PauseSentence"
+context = "Pause mode: at sentence end."
+English = "Sentence"
+Japanese = "文末"
+Chinese = "句末"
+Korean = "문장 끝"
+
+[[strings]]
+key = "GenreChores"
+context = "Focus timer genre: chores."
+English = "Chores"
+Japanese = "家事"
+Chinese = "家务"
+Korean = "집안일"
+
+[[strings]]
+key = "GenreWork"
+context = "Focus timer genre: work."
+English = "Work"
+Japanese = "仕事"
+Chinese = "工作"
+Korean = "작업"
+
+[[strings]]
+key = "GenreFitness"
+context = "Focus timer genre: fitness."
+English = "Fitness"
+Japanese = "運動"
+Chinese = "健身"
+Korean = "운동"
+
+[[strings]]
+key = "GenreSelfCare"
+context = "Focus timer genre: self care."
+English = "Self Care"
+Japanese = "セルフケア"
+Chinese = "自我照顾"
+Korean = "셀프케어"
+
+[[strings]]
+key = "GenreOther"
+context = "Focus timer genre: other."
+English = "Other"
+Japanese = "その他"
+Chinese = "其他"
+Korean = "기타"
+
+[[strings]]
+key = "BrowseArticles"
+context = "Articles submenu: browse saved articles."
+English = "Browse articles"
+Japanese = "記事を見る"
+Chinese = "浏览文章"
+Korean = "아티클 보기"
+
+[[strings]]
+key = "UpdateRss"
+context = "Articles submenu: refresh RSS feeds."
+English = "Update RSS"
+Japanese = "RSS更新"
+Chinese = "更新RSS"
+Korean = "RSS 갱신"
+
+[[strings]]
+key = "FocusTimer"
+context = "Main menu item: focus timer."
+English = "Focus Timer"
+Japanese = "集中タイマー"
+Chinese = "专注计时"
+Korean = "집중 타이머"

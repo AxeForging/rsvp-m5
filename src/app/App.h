@@ -118,6 +118,7 @@ private:
         RestartConfirm,
         SdCardRepairConfirm,
         UpdateConfirm,
+        LanguageFontDownload,
         SyncWifiPrompt,
         QuickSettings,
         QuickSync,
@@ -313,6 +314,9 @@ private:
     String phantomWordsLabel() const;
     String focusHighlightLabel() const;
     String uiLanguageLabel() const;
+    const char* uiLanguageEnglishName() const;
+    static const char* englishLanguageName(UiLanguage lang);
+    bool isUiLanguageRenderable(UiLanguage lang) const;
     String readerModeLabel() const;
     String pauseModeLabel() const;
     String handednessLabel() const;
@@ -327,6 +331,11 @@ private:
     void selectChapterPickerItem(uint32_t nowMs);
     void openRestartConfirm();
     void selectRestartConfirmItem(uint32_t nowMs);
+    void openLanguageFontPrompt(UiLanguage target, uint32_t nowMs);
+    void renderLanguageFontPrompt();
+    void confirmLanguageFontDownload(uint32_t nowMs);
+    void cancelLanguageFontDownload(uint32_t nowMs);
+    bool downloadCjkFontOverWifi(const OtaUpdater::Config& config, uint32_t nowMs);
     void openSdCardRepairConfirm();
     void selectSdCardRepairConfirmItem(uint32_t nowMs);
     void runSdCardRepair(uint32_t nowMs);
@@ -521,6 +530,8 @@ private:
     size_t typographyPreviewSampleIndex_ = 0;
     MenuScreen menuScreen_ = MenuScreen::Main;
     MenuScreen restartConfirmReturnScreen_ = MenuScreen::Main;
+    MenuScreen languagePromptReturnScreen_ = MenuScreen::SettingsDisplay;
+    UiLanguage pendingUiLanguage_ = UiLanguage::English;
     QueueHandle_t otaCheckQueue_ = nullptr;
     std::vector<String> settingsMenuItems_;
     std::vector<String> focusTimerGenreMenuItems_;

@@ -924,6 +924,18 @@ bool App::isSettingsMenuScreen(MenuScreen screen) const {
         || screen == MenuScreen::WifiNetworkSettings;
 }
 
+bool App::isUiLanguageRenderable(UiLanguage lang) const {
+    // Latin scripts always render from the bundled reader fonts.
+    if (lang != UiLanguage::Japanese && lang != UiLanguage::Chinese && lang != UiLanguage::Korean) {
+        return true;
+    }
+    // This build bundled exactly one language's efont (its default); the rest need the SD-side VLW.
+    if (lang == RSVP_DEFAULT_UI_LANGUAGE) {
+        return true;
+    }
+    return Board::Storage::filesystem().exists("/fonts/cjk.vlw");
+}
+
 void App::setState(AppState nextState, uint32_t nowMs) {
     if (nextState == state_) {
         return;
@@ -1514,7 +1526,16 @@ void App::cycleThemeMode(uint32_t nowMs) {
 }
 
 void App::cycleUiLanguage(uint32_t nowMs) {
-    uiLanguage_ = Localization::nextLanguage(uiLanguage_);
+    const UiLanguage next = Localization::nextLanguage(uiLanguage_);
+
+    // An unbundled CJK language with no downloaded font would render the whole UI (including the menu
+    // needed to switch back) as tofu — offer a Wi-Fi font download instead of committing to it.
+    if (!isUiLanguageRenderable(next)) {
+        openLanguageFontPrompt(next, nowMs);
+        return;
+    }
+
+    uiLanguage_ = next;
     preferences_.putUChar(kPrefUiLanguage, static_cast<uint8_t>(uiLanguage_));
     Serial.printf("[display] language=%s\n", uiLanguageLabel().c_str());
 
@@ -2162,7 +2183,9 @@ void App::applyBrowseHoldScroll(uint16_t y, uint32_t elapsedMs, uint32_t nowMs) 
 // One step "back" from the current menu screen: submenus return to their parent, the main menu
 // (and quick settings) exits to the reader. Shared by the centre button and the left-swipe gesture.
 void App::menuBack(uint32_t nowMs) {
-    if (menuScreen_ == MenuScreen::Main || menuScreen_ == MenuScreen::QuickSettings) {
+    if (menuScreen_ == MenuScreen::LanguageFontDownload) {
+        cancelLanguageFontDownload(nowMs);
+    } else if (menuScreen_ == MenuScreen::Main || menuScreen_ == MenuScreen::QuickSettings) {
         setState(AppState::Paused, nowMs);
     } else if (menuScreen_ == MenuScreen::QuickSync) {
         menuScreen_ = MenuScreen::QuickSettings;
@@ -2353,11 +2376,11 @@ void App::resetFocusTimer() {
 void App::rebuildFocusTimerGenreMenuItems() {
     focusTimerGenreMenuItems_.clear();
     focusTimerGenreMenuItems_.push_back(uiText(UiText::Back));
-    focusTimerGenreMenuItems_.push_back("Chores");
-    focusTimerGenreMenuItems_.push_back("Work");
-    focusTimerGenreMenuItems_.push_back("Fitness");
-    focusTimerGenreMenuItems_.push_back("Self Care");
-    focusTimerGenreMenuItems_.push_back("Other");
+    focusTimerGenreMenuItems_.push_back(uiText(UiText::GenreChores));
+    focusTimerGenreMenuItems_.push_back(uiText(UiText::GenreWork));
+    focusTimerGenreMenuItems_.push_back(uiText(UiText::GenreFitness));
+    focusTimerGenreMenuItems_.push_back(uiText(UiText::GenreSelfCare));
+    focusTimerGenreMenuItems_.push_back(uiText(UiText::GenreOther));
 
     if (focusTimerGenreSelectedIndex_ >= focusTimerGenreMenuItems_.size()) {
         focusTimerGenreSelectedIndex_ =
@@ -2636,6 +2659,10 @@ void App::selectMenuItem(uint32_t nowMs) {
     }
     if (menuScreen_ == MenuScreen::RestartConfirm) {
         selectRestartConfirmItem(nowMs);
+        return;
+    }
+    if (menuScreen_ == MenuScreen::LanguageFontDownload) {
+        confirmLanguageFontDownload(nowMs);
         return;
     }
     if (menuScreen_ == MenuScreen::SdCardRepairConfirm) {
@@ -3825,25 +3852,26 @@ void App::rebuildSettingsMenuItems() {
             settingsMenuItems_.push_back(uiText(UiText::TypographyTune));
             settingsMenuItems_.push_back("Wi-Fi");
             settingsMenuItems_.push_back(firmwareUpdateMenuLabel());
-            settingsMenuItems_.push_back("Installed: " + firmwareVersionLabel());
-            settingsMenuItems_.push_back("SD card check");
+            settingsMenuItems_.push_back(uiText(UiText::Installed) + ": " + firmwareVersionLabel());
+            settingsMenuItems_.push_back(uiText(UiText::SdCardCheck));
         } else if (menuScreen_ == MenuScreen::SettingsDisplay) {
             settingsMenuItems_.push_back(uiText(UiText::Back));
-            settingsMenuItems_.push_back("Theme: " + themeModeLabel());
+            settingsMenuItems_.push_back(uiText(UiText::Theme) + ": " + themeModeLabel());
             settingsMenuItems_.push_back(uiText(UiText::Brightness) + ": " + String(currentBrightnessPercent()) + "%");
-            settingsMenuItems_.push_back("L/R hand: " + handednessLabel());
-            settingsMenuItems_.push_back(uiText(UiText::Language) + ": " + uiLanguageLabel());
-            settingsMenuItems_.push_back("Screen saver: " + screensaverModeLabel());
-            settingsMenuItems_.push_back("Standby timer: " + standbyTimerLabel());
-            settingsMenuItems_.push_back("Progress label: " + footerMetricModeLabel());
-            settingsMenuItems_.push_back("Battery label: " + batteryLabelModeLabel());
-            settingsMenuItems_.push_back("Reading battery: " + onOffLabel(readerBatteryVisibleWhilePlaying_));
-            settingsMenuItems_.push_back("Reading chapter: " + onOffLabel(readerChapterVisibleWhilePlaying_));
-            settingsMenuItems_.push_back("Reading progress: " + onOffLabel(readerProgressVisibleWhilePlaying_));
+            settingsMenuItems_.push_back(uiText(UiText::ReaderHand) + ": " + handednessLabel());
+            // Language item is ALWAYS English so it stays findable from any script.
+            settingsMenuItems_.push_back(String("Language: ") + uiLanguageEnglishName());
+            settingsMenuItems_.push_back(uiText(UiText::ScreenSaver) + ": " + screensaverModeLabel());
+            settingsMenuItems_.push_back(uiText(UiText::StandbyTimer) + ": " + standbyTimerLabel());
+            settingsMenuItems_.push_back(uiText(UiText::ProgressLabel) + ": " + footerMetricModeLabel());
+            settingsMenuItems_.push_back(uiText(UiText::BatteryLabel) + ": " + batteryLabelModeLabel());
+            settingsMenuItems_.push_back(uiText(UiText::ReadingBattery) + ": " + onOffLabel(readerBatteryVisibleWhilePlaying_));
+            settingsMenuItems_.push_back(uiText(UiText::ReadingChapter) + ": " + onOffLabel(readerChapterVisibleWhilePlaying_));
+            settingsMenuItems_.push_back(uiText(UiText::ReadingProgress) + ": " + onOffLabel(readerProgressVisibleWhilePlaying_));
         } else if (menuScreen_ == MenuScreen::SettingsPacing) {
             settingsMenuItems_.push_back(uiText(UiText::Back));
-            settingsMenuItems_.push_back("Reading mode: " + readerModeLabel());
-            settingsMenuItems_.push_back("Pause mode: " + pauseModeLabel());
+            settingsMenuItems_.push_back(uiText(UiText::ReadingMode) + ": " + readerModeLabel());
+            settingsMenuItems_.push_back(uiText(UiText::PauseMode) + ": " + pauseModeLabel());
             settingsMenuItems_.push_back(uiText(UiText::LongWords) + ": " + pacingDelayLabel(pacingLongWordDelayMs_));
             settingsMenuItems_.push_back(uiText(UiText::Complexity) + ": "
                                          + pacingDelayLabel(pacingComplexWordDelayMs_));
@@ -3852,14 +3880,14 @@ void App::rebuildSettingsMenuItems() {
             settingsMenuItems_.push_back(uiText(UiText::ResetPacing));
         } else if (menuScreen_ == MenuScreen::WifiSettings) {
             settingsMenuItems_.push_back(uiText(UiText::Back));
-            settingsMenuItems_.push_back("Network: " + storedOrFallbackLabel(configuredWifiSsid(), "Not set"));
-            settingsMenuItems_.push_back("Auto OTA: " + String(otaAutoCheckEnabled() ? "On" : "Off"));
-            settingsMenuItems_.push_back("OTA Owner: " + otaOwnerLabel());
-            settingsMenuItems_.push_back("OTA Tag: " + otaTagLabel());
+            settingsMenuItems_.push_back(uiText(UiText::Network) + ": " + storedOrFallbackLabel(configuredWifiSsid(), "Not set"));
+            settingsMenuItems_.push_back(uiText(UiText::AutoOta) + ": " + onOffLabel(otaAutoCheckEnabled()));
+            settingsMenuItems_.push_back(uiText(UiText::OtaOwner) + ": " + otaOwnerLabel());
+            settingsMenuItems_.push_back(uiText(UiText::OtaTag) + ": " + otaTagLabel());
         } else if (menuScreen_ == MenuScreen::WifiNetworkSettings) {
             settingsMenuItems_.push_back(uiText(UiText::Back));
-            settingsMenuItems_.push_back("Choose network: " + storedOrFallbackLabel(configuredWifiSsid(), "Not set"));
-            settingsMenuItems_.push_back("Forget network");
+            settingsMenuItems_.push_back(uiText(UiText::ChooseNetwork) + ": " + storedOrFallbackLabel(configuredWifiSsid(), "Not set"));
+            settingsMenuItems_.push_back(uiText(UiText::ForgetNetwork));
         }
 
         if (settingsSelectedIndex_ >= settingsMenuItems_.size()) {
@@ -4162,17 +4190,8 @@ void App::runFirmwareUpdate(const OtaUpdater::Config& config, bool automatic, ui
     // First-run only: pull the ~34 MB Noto CJK font to the SD so Japanese/Chinese/Korean render with
     // the complete font instead of the limited bundled fallback. Manual Update only; skipped once the
     // font is present, and downloaded before any firmware reboot so it survives the restart.
-    if (!automatic && !Board::Storage::filesystem().exists("/fonts/cjk.vlw")) {
-        const OtaUpdater::Result fontResult = otaUpdater_.downloadAssetToSd(
-            config, "rsvp-m5-cjk.vlw", "/fonts/cjk.vlw", &App::handleStorageStatus, this);
-        Serial.printf("[cjk-font] code=%u summary=%s detail=%s\n",
-                      static_cast<unsigned int>(fontResult.code), fontResult.summary.c_str(),
-                      fontResult.detail.c_str());
-        if (fontResult.code == OtaUpdater::ResultCode::Success) {
-            display_.resetCjkFontCache();  // pick up the just-downloaded VLW without a reboot
-        }
-        display_.renderStatus("CJK Font", fontResult.summary, fontResult.detail);
-        delay(1500);
+    if (!automatic) {
+        downloadCjkFontOverWifi(config, nowMs);
     }
 
     if (result.rebootRequired) {
@@ -4229,7 +4248,7 @@ String App::pacingDelayLabel(uint16_t delayMs) const {
 }
 
 String App::firmwareUpdateMenuLabel() const {
-    return "Firmware update";
+    return uiText(UiText::FirmwareUpdate);
 }
 
 String App::firmwareVersionLabel() const {
@@ -4263,6 +4282,27 @@ String App::uiLanguageLabel() const {
     return Localization::languageName(uiLanguage_);
 }
 
+// The Language setting is ALWAYS shown in English (label + language name) so a user who lands on a
+// script they can't read can still find and change it -- never localize this one.
+const char* App::englishLanguageName(UiLanguage lang) {
+    switch (lang) {
+        case UiLanguage::Spanish: return "Spanish";
+        case UiLanguage::French: return "French";
+        case UiLanguage::German: return "German";
+        case UiLanguage::Romanian: return "Romanian";
+        case UiLanguage::Polish: return "Polish";
+        case UiLanguage::Japanese: return "Japanese";
+        case UiLanguage::Chinese: return "Chinese";
+        case UiLanguage::Korean: return "Korean";
+        case UiLanguage::English:
+        default: return "English";
+    }
+}
+
+const char* App::uiLanguageEnglishName() const {
+    return englishLanguageName(uiLanguage_);
+}
+
 String App::readerModeLabel() const {
     switch (readerMode_) {
     case ReaderMode::Scroll:
@@ -4274,11 +4314,11 @@ String App::readerModeLabel() const {
 }
 
 String App::pauseModeLabel() const {
-    return pauseMode_ == PauseMode::Instant ? "Instant" : "Sentence";
+    return uiText(pauseMode_ == PauseMode::Instant ? UiText::PauseInstant : UiText::PauseSentence);
 }
 
 String App::handednessLabel() const {
-    return handednessMode_ == HandednessMode::Left ? "Left" : "Right";
+    return uiText(handednessMode_ == HandednessMode::Left ? UiText::HandLeft : UiText::HandRight);
 }
 
 String App::readerFontSizeLabel() const {
@@ -4544,6 +4584,78 @@ void App::selectRestartConfirmItem(uint32_t nowMs) {
     setState(AppState::Paused, nowMs);
     saveReadingPosition(true);
     Serial.println("[restart] book restarted from beginning");
+}
+
+// Fetch the full multi-script Noto VLW to the SD over Wi-Fi. Shared by the manual firmware-update path
+// and the missing-language prompt. Blocking; renders live download progress via handleStorageStatus.
+bool App::downloadCjkFontOverWifi(const OtaUpdater::Config& config, uint32_t nowMs) {
+    (void) nowMs;
+    if (Board::Storage::filesystem().exists("/fonts/cjk.vlw")) {
+        display_.resetCjkFontCache();  // already present — just make sure the cache re-checks
+        return true;
+    }
+    const OtaUpdater::Result fontResult = otaUpdater_.downloadAssetToSd(
+        config, "rsvp-m5-cjk.vlw", "/fonts/cjk.vlw", &App::handleStorageStatus, this);
+    Serial.printf("[cjk-font] code=%u summary=%s detail=%s\n",
+                  static_cast<unsigned int>(fontResult.code), fontResult.summary.c_str(),
+                  fontResult.detail.c_str());
+    const bool ok = (fontResult.code == OtaUpdater::ResultCode::Success);
+    if (ok) {
+        display_.resetCjkFontCache();  // pick up the just-downloaded VLW without a reboot
+    }
+    display_.renderStatus("CJK Font", fontResult.summary, fontResult.detail);
+    delay(1500);
+    return ok;
+}
+
+// Messages here are English by design: the user may have just picked a script they cannot read.
+void App::renderLanguageFontPrompt() {
+    display_.renderStatus("Language", String(englishLanguageName(pendingUiLanguage_)) + " needs a font",
+                          "Tap to download over Wi-Fi");
+}
+
+void App::openLanguageFontPrompt(UiLanguage target, uint32_t nowMs) {
+    (void) nowMs;
+    pendingUiLanguage_ = target;
+    languagePromptReturnScreen_ = menuScreen_;
+
+    const OtaUpdater::Config config = preferredOtaConfig();
+    if (configuredWifiSsid().isEmpty() || !otaUpdater_.isConfigured(config)) {
+        // No Wi-Fi to download over — keep the current readable language, tell the user where to set it up.
+        display_.renderStatus("Language", "Connect to Wi-Fi", "Settings -> Wi-Fi");
+        delay(1600);
+        rebuildSettingsMenuItems();
+        renderSettings();
+        return;
+    }
+
+    menuScreen_ = MenuScreen::LanguageFontDownload;
+    renderLanguageFontPrompt();
+}
+
+void App::confirmLanguageFontDownload(uint32_t nowMs) {
+    const OtaUpdater::Config config = preferredOtaConfig();
+    const bool ok = downloadCjkFontOverWifi(config, nowMs);  // blocking; renders live progress
+
+    if (ok) {
+        uiLanguage_ = pendingUiLanguage_;  // commit only on success — never leaves the UI as tofu
+        preferences_.putUChar(kPrefUiLanguage, static_cast<uint8_t>(uiLanguage_));
+        Serial.printf("[display] language=%s (font downloaded)\n", uiLanguageLabel().c_str());
+    } else {
+        display_.renderStatus("Language", "Download failed", "Language unchanged");
+        delay(1600);
+    }
+
+    menuScreen_ = languagePromptReturnScreen_;
+    rebuildSettingsMenuItems();
+    renderSettings();
+}
+
+void App::cancelLanguageFontDownload(uint32_t nowMs) {
+    (void) nowMs;
+    menuScreen_ = languagePromptReturnScreen_;  // nothing was committed → nothing to revert
+    rebuildSettingsMenuItems();
+    renderSettings();
 }
 
 void App::openSdCardRepairConfirm() {
@@ -5584,6 +5696,8 @@ void App::renderMenu() {
         renderSdCardRepairConfirm();
     } else if (menuScreen_ == MenuScreen::UpdateConfirm) {
         renderUpdateConfirm();
+    } else if (menuScreen_ == MenuScreen::LanguageFontDownload) {
+        renderLanguageFontPrompt();
     } else if (menuScreen_ == MenuScreen::SyncWifiPrompt) {
         renderSyncWifiPrompt();
     } else if (menuScreen_ == MenuScreen::QuickSettings) {
@@ -5628,8 +5742,8 @@ void App::renderArticlesMenu() {
     std::vector<String> items;
     items.reserve(ArticlesItemCount);
     items.push_back(uiText(UiText::Back));
-    items.push_back("Browse articles");
-    items.push_back("Update RSS");
+    items.push_back(uiText(UiText::BrowseArticles));
+    items.push_back(uiText(UiText::UpdateRss));
     display_.renderMenu(items, articlesSelectedIndex_);
 }
 
@@ -5974,38 +6088,38 @@ String App::currentBatteryLabel() const {
 String App::footerMetricModeLabel() const {
     switch (footerMetricMode_) {
     case FooterMetricMode::ChapterTime:
-        return "Chapter time";
+        return uiText(UiText::MetricChapterTime);
     case FooterMetricMode::BookTime:
-        return "Book time";
+        return uiText(UiText::MetricBookTime);
     case FooterMetricMode::Percentage:
     default:
-        return "Percent read";
+        return uiText(UiText::MetricPercentRead);
     }
 }
 
 String App::batteryLabelModeLabel() const {
     switch (batteryLabelMode_) {
     case BatteryLabelMode::TimeRemaining:
-        return "Time remaining";
+        return uiText(UiText::BatteryTimeRemaining);
     case BatteryLabelMode::Voltage:
-        return "Voltage";
+        return uiText(UiText::BatteryVoltage);
     case BatteryLabelMode::Percent:
     default:
-        return "Percentage";
+        return uiText(UiText::BatteryPercentage);
     }
 }
 
 String App::screensaverModeLabel() const {
     switch (screensaverMode_) {
     case ScreensaverMode::Maze:
-        return "Maze";
+        return uiText(UiText::SaverMaze);
     case ScreensaverMode::Voronoi:
-        return "Voronoi";
+        return uiText(UiText::SaverVoronoi);
     case ScreensaverMode::ScreenOff:
-        return "Screen off";
+        return uiText(UiText::SaverScreenOff);
     case ScreensaverMode::Life:
     default:
-        return "Life";
+        return uiText(UiText::SaverLife);
     }
 }
 
