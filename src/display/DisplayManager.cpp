@@ -2240,7 +2240,10 @@ void DisplayManager::renderPhantomRsvpWord(const String &beforeText, const Strin
 
   lastRenderKey_ = renderKey;
 
-  if (isCjkText(word) || isCjkText(beforeText) || isCjkText(afterText)) {
+  // Route by the FOCUS word only. A Latin word next to CJK (a section header) then keeps the normal
+  // Latin path with its ORP letter highlight; the Latin renderer safely skips any CJK bytes in the
+  // faded context. A CJK focus word takes the CJK path, which renders its neighbours too.
+  if (isCjkText(word)) {
     renderCjkPhantom(beforeText, word, afterText, false, 0, chapterLabel, progressPercent,
                      showFooter, footerStatusLabel, chrome);
     return;
@@ -2682,7 +2685,9 @@ void DisplayManager::renderPhantomRsvpWordWithWpm(const String &beforeText, cons
 
   lastRenderKey_ = renderKey;
 
-  if (isCjkText(word) || isCjkText(beforeText) || isCjkText(afterText)) {
+  // Route by the FOCUS word only (see renderPhantomRsvpWord) so Latin headers next to CJK keep the
+  // ORP highlight.
+  if (isCjkText(word)) {
     renderCjkPhantom(beforeText, word, afterText, true, wpm, chapterLabel, progressPercent,
                      showFooter, footerStatusLabel, chrome);
     return;
