@@ -23,4 +23,6 @@ void setup() {
 void loop() {
   const uint32_t now = millis();
   app.update(now);
+  // Yield the core instead of busy-spinning; rendering already only redraws on word change.
+  delay(app.loopIdleMs());
 }

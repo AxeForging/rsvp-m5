@@ -1841,23 +1841,39 @@ void DisplayManager::applyBrightness() {
 void DisplayManager::flushScaledFrame(int scale, int virtualWidth, int virtualHeight) {
   tickerPlaybackFrameActive_ = false;
   const int maxRows = maxChunkPhysicalRows();
+
+  // Fast path: on Core2 the logical<->panel map is the identity (Portrait) and scale is always 1
+  // (kMinTextScale==kMaxTextScale==1), and virtualFrame_ rows are already panel-width. Every pixel
+  // is then in-bounds and maps 1:1, so the general per-pixel remap -- two integer divides per pixel
+  // plus a full-buffer memset per chunk, run on every word flip -- collapses to a contiguous row
+  // memcpy. Runs on ~all real renders; the general loop still covers the 180-rotated / partial cases.
+  const bool identity = scale == 1 && uiOrientation_ == Board::UiOrientation::Portrait &&
+                        kVirtualBufferWidth == kPanelNativeWidth &&
+                        virtualWidth >= kPanelNativeWidth && virtualHeight >= kPanelNativeHeight;
+
   for (int nativeYStart = 0; nativeYStart < kPanelNativeHeight; nativeYStart += maxRows) {
     const int nativeRows = std::min(maxRows, kPanelNativeHeight - nativeYStart);
-    std::memset(txBuffer_, 0, txBufferBytes_);
 
-    for (int localNativeY = 0; localNativeY < nativeRows; ++localNativeY) {
-      const int nativeY = nativeYStart + localNativeY;
-      uint16_t *dstRow = txBuffer_ + localNativeY * kPanelNativeWidth;
+    if (identity) {
+      std::memcpy(txBuffer_,
+                  virtualFrame_ + static_cast<size_t>(nativeYStart) * kVirtualBufferWidth,
+                  static_cast<size_t>(nativeRows) * kPanelNativeWidth * sizeof(uint16_t));
+    } else {
+      std::memset(txBuffer_, 0, txBufferBytes_);
+      for (int localNativeY = 0; localNativeY < nativeRows; ++localNativeY) {
+        const int nativeY = nativeYStart + localNativeY;
+        uint16_t *dstRow = txBuffer_ + localNativeY * kPanelNativeWidth;
 
-      for (int nativeX = 0; nativeX < kPanelNativeWidth; ++nativeX) {
-        int logicalX = 0;
-        int logicalY = 0;
-        mapPhysicalToLogical(uiOrientation_, nativeX, nativeY, logicalX, logicalY);
-        const int sourceX = logicalX / scale;
-        const int sourceY = logicalY / scale;
+        for (int nativeX = 0; nativeX < kPanelNativeWidth; ++nativeX) {
+          int logicalX = 0;
+          int logicalY = 0;
+          mapPhysicalToLogical(uiOrientation_, nativeX, nativeY, logicalX, logicalY);
+          const int sourceX = logicalX / scale;
+          const int sourceY = logicalY / scale;
 
-        if (sourceX >= 0 && sourceX < virtualWidth && sourceY >= 0 && sourceY < virtualHeight) {
-          dstRow[nativeX] = virtualFrame_[sourceY * kVirtualBufferWidth + sourceX];
+          if (sourceX >= 0 && sourceX < virtualWidth && sourceY >= 0 && sourceY < virtualHeight) {
+            dstRow[nativeX] = virtualFrame_[sourceY * kVirtualBufferWidth + sourceX];
+          }
         }
       }
     }

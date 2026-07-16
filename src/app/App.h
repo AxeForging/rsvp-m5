@@ -39,6 +39,9 @@ public:
 
     void begin();
     void update(uint32_t nowMs);
+    // Idle delay for the main loop to yield the core between polls. Tight while Playing so word
+    // timing stays precise; looser otherwise (input still polls well above the ~13 words/s ceiling).
+    uint32_t loopIdleMs() const { return state_ == AppState::Playing ? 2 : 15; }
 
 private:
     static constexpr size_t kOtaVersionLabelMax = 32;
