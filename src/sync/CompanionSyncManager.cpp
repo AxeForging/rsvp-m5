@@ -65,6 +65,7 @@ const char kWebCompanionHtml[] PROGMEM = R"HTML(<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RSVP M5 Companion</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23070a10'/><path d='M16 6V27' stroke='%23fff' stroke-width='4'/><path fill='%23d3542f' d='M16 14 5 6a11 11 0 0 0 0 16z'/><path fill='%23d3542f' d='M16 14 27 6a11 11 0 0 1 0 16z'/></svg>">
 <style>
 :root{color-scheme:dark;--bg:#070a10;--fg:#f4f6fb;--muted:#8b98ad;--line:#1b2434;--card:#0c111b;--surface2:#0e141f;--surface3:#161d2b;--accent:#d3542f;--accentHover:#e56c45;--accentDeep:#b8461f;--accentInk:#fff;--danger:#ff6b60;--ok:#3fb950;--radius:10px;--radiusLg:16px}
 *{box-sizing:border-box}
