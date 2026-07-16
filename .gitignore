@@ -25,5 +25,9 @@ web/firmware/*.bin
 .tmp/
 compile_commands.json
 src/idf_component.yml
-benchmark/logs/
-benchmark/summary.md
+
+# Removed Kotlin/Gradle companion build outputs (no source in this repo)
+RSVPNanoCompanion/
+build/
+.gradle/
+.kotlin/
