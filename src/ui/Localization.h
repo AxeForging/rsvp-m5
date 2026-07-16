@@ -11,6 +11,9 @@ enum class UiLanguage : uint8_t {
 	German,
 	Romanian,
 	Polish,
+	Japanese,
+	Chinese,
+	Korean,
 	Count,
 };
 
@@ -70,6 +73,9 @@ enum class UiText : uint8_t {
 	TimeEstimate,
 	TimeEstimateAccurate,
 	TimeEstimateFast,
+	Books,
+	Articles,
+	Sync,
 	Count,
 };
 

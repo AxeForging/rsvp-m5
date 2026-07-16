@@ -12,8 +12,8 @@ constexpr size_t kTextCount = static_cast<size_t>(UiText::Count);
 constexpr size_t kDefaultLanguageIndex = 0;
 constexpr uint16_t kMissingOffset = 0xFFFF;
 
-static_assert(kLanguageCount == 6, "UiLanguage count mismatch");
-static_assert(kTextCount == 55, "UiText count mismatch");
+static_assert(kLanguageCount == 9, "UiLanguage count mismatch");
+static_assert(kTextCount == 58, "UiText count mismatch");
 
 constexpr char kStringBlob[] =
 	/*     0 */ "English\0"
@@ -22,316 +22,500 @@ constexpr char kStringBlob[] =
 	/*    25 */ "Deutsch\0"
 	/*    33 */ "Romana\0"
 	/*    40 */ "Polski\0"
-	/*    47 */ "Resume\0"
-	/*    54 */ "Chapters\0"
-	/*    63 */ "Library\0"
-	/*    71 */ "Settings\0"
-	/*    80 */ "Power off\0"
-	/*    90 */ "Back\0"
-	/*    95 */ "Display\0"
-	/*   103 */ "Typography tune\0"
-	/*   119 */ "Word pacing\0"
-	/*   131 */ "Theme\0"
-	/*   137 */ "Brightness\0"
-	/*   148 */ "Language\0"
-	/*   157 */ "Reading mode\0"
-	/*   170 */ "Long words\0"
-	/*   181 */ "Complexity\0"
-	/*   192 */ "Punctuation\0"
-	/*   204 */ "Reset pacing\0"
-	/*   217 */ "Night\0"
-	/*   223 */ "Dark\0"
-	/*   228 */ "Light\0"
-	/*   234 */ "On\0"
-	/*   237 */ "Off\0"
-	/*   241 */ "Font size\0"
-	/*   251 */ "Typeface\0"
-	/*   260 */ "Phantom words\0"
-	/*   274 */ "Red highlight\0"
-	/*   288 */ "Tracking\0"
-	/*   297 */ "Anchor\0"
-	/*   304 */ "Guide width\0"
-	/*   316 */ "Guide gap\0"
-	/*   326 */ "Reset\0"
-	/*   332 */ "Typography\0"
-	/*   343 */ "tap to exit\0"
-	/*   355 */ "tap to reset\0"
-	/*   368 */ "Tap change  L/R sample\0"
-	/*   391 */ "Tap exit  L/R sample\0"
-	/*   412 */ "Tap toggle  L/R sample\0"
-	/*   435 */ "Tap cycle  L/R sample\0"
-	/*   457 */ "Current book\0"
-	/*   470 */ "Start\0"
-	/*   476 */ "Start of book\0"
-	/*   490 */ "Restart book\0"
-	/*   503 */ "Are you sure?\0"
-	/*   517 */ "No, keep place\0"
-	/*   532 */ "Yes, restart\0"
-	/*   545 */ "No samples\0"
-	/*   556 */ "Large\0"
-	/*   562 */ "Medium\0"
-	/*   569 */ "Small\0"
-	/*   575 */ "Standard\0"
-	/*   584 */ "RSVP\0"
-	/*   589 */ "Page scroll\0"
-	/*   601 */ "Time estimate\0"
-	/*   615 */ "Accurate\0"
-	/*   624 */ "Fast\0"
-	/*   629 */ "Reanudar\0"
-	/*   638 */ "Capitulos\0"
-	/*   648 */ "Biblioteca\0"
-	/*   659 */ "Ajustes\0"
-	/*   667 */ "Apagar\0"
-	/*   674 */ "Atras\0"
-	/*   680 */ "Pantalla\0"
-	/*   689 */ "Tipografia\0"
-	/*   700 */ "Ritmo lectura\0"
-	/*   714 */ "Tema\0"
-	/*   719 */ "Brillo\0"
-	/*   726 */ "Idioma\0"
-	/*   733 */ "Modo lectura\0"
-	/*   746 */ "Palabras largas\0"
-	/*   762 */ "Complejidad\0"
-	/*   774 */ "Puntuacion\0"
-	/*   785 */ "Restablecer ritmo\0"
-	/*   803 */ "Noche\0"
-	/*   809 */ "Oscuro\0"
-	/*   816 */ "Claro\0"
-	/*   822 */ "Si\0"
-	/*   825 */ "No\0"
-	/*   828 */ "Tamano\0"
-	/*   835 */ "Fuente\0"
-	/*   842 */ "Palabras fantasma\0"
-	/*   860 */ "Rojo\0"
-	/*   865 */ "Espaciado\0"
-	/*   875 */ "Ancla\0"
-	/*   881 */ "Ancho guia\0"
-	/*   892 */ "Hueco guia\0"
-	/*   903 */ "Restablecer\0"
-	/*   915 */ "toca salir\0"
-	/*   926 */ "toca reiniciar\0"
-	/*   941 */ "Toca cambiar L/R muestra\0"
-	/*   966 */ "Toca salir L/R muestra\0"
-	/*   989 */ "Toca alternar L/R muestra\0"
-	/*  1015 */ "Toca ciclo L/R muestra\0"
-	/*  1038 */ "Libro actual\0"
-	/*  1051 */ "Inicio\0"
-	/*  1058 */ "Inicio del libro\0"
-	/*  1075 */ "Reiniciar libro\0"
-	/*  1091 */ "Seguro?\0"
-	/*  1099 */ "No, conservar\0"
-	/*  1113 */ "Si, reiniciar\0"
-	/*  1127 */ "Sin muestras\0"
-	/*  1140 */ "Grande\0"
-	/*  1147 */ "Mediano\0"
-	/*  1155 */ "Pequeno\0"
-	/*  1163 */ "Estandar\0"
-	/*  1172 */ "Scroll pagina\0"
-	/*  1186 */ "Tiempo restante\0"
-	/*  1202 */ "Preciso\0"
-	/*  1210 */ "Rapido\0"
-	/*  1217 */ "Reprendre\0"
-	/*  1227 */ "Chapitres\0"
-	/*  1237 */ "Bibliotheque\0"
-	/*  1250 */ "Reglages\0"
-	/*  1259 */ "Eteindre\0"
-	/*  1268 */ "Retour\0"
-	/*  1275 */ "Affichage\0"
-	/*  1285 */ "Typographie\0"
-	/*  1297 */ "Rythme mots\0"
-	/*  1309 */ "Luminosite\0"
-	/*  1320 */ "Langue\0"
-	/*  1327 */ "Mode lecture\0"
-	/*  1340 */ "Mots longs\0"
-	/*  1351 */ "Complexite\0"
-	/*  1362 */ "Ponctuation\0"
-	/*  1374 */ "Reinit. rythme\0"
-	/*  1389 */ "Nuit\0"
-	/*  1394 */ "Sombre\0"
-	/*  1401 */ "Clair\0"
-	/*  1407 */ "Oui\0"
-	/*  1411 */ "Non\0"
-	/*  1415 */ "Taille\0"
-	/*  1422 */ "Police\0"
-	/*  1429 */ "Mots fantomes\0"
-	/*  1443 */ "Accent rouge\0"
-	/*  1456 */ "Espacement\0"
-	/*  1467 */ "Ancre\0"
-	/*  1473 */ "Largeur guide\0"
-	/*  1487 */ "Ecart guide\0"
-	/*  1499 */ "Reinit.\0"
-	/*  1507 */ "toucher sortie\0"
-	/*  1522 */ "toucher reinit.\0"
-	/*  1538 */ "Touchez change  G/D echant.\0"
-	/*  1566 */ "Touchez sortie  G/D echant.\0"
-	/*  1594 */ "Touchez option  G/D echant.\0"
-	/*  1622 */ "Touchez cycle  G/D echant.\0"
-	/*  1649 */ "Livre actuel\0"
-	/*  1662 */ "Debut\0"
-	/*  1668 */ "Debut du livre\0"
-	/*  1683 */ "Relancer livre\0"
-	/*  1698 */ "Confirmer ?\0"
-	/*  1710 */ "Non, garder\0"
-	/*  1722 */ "Oui, relancer\0"
-	/*  1736 */ "Aucun exemple\0"
-	/*  1750 */ "Grand\0"
-	/*  1756 */ "Moyen\0"
-	/*  1762 */ "Petit\0"
-	/*  1768 */ "Defilement page\0"
-	/*  1784 */ "Temps restant\0"
-	/*  1798 */ "Precis\0"
-	/*  1805 */ "Rapide\0"
-	/*  1812 */ "Weiter\0"
-	/*  1819 */ "Kapitel\0"
-	/*  1827 */ "Bibliothek\0"
-	/*  1838 */ "Optionen\0"
-	/*  1847 */ "Ausschalten\0"
-	/*  1859 */ "Zuruck\0"
-	/*  1866 */ "Anzeige\0"
-	/*  1874 */ "Typografie\0"
-	/*  1885 */ "Lesetempo\0"
-	/*  1895 */ "Thema\0"
-	/*  1901 */ "Helligkeit\0"
-	/*  1912 */ "Sprache\0"
-	/*  1920 */ "Lesemodus\0"
-	/*  1930 */ "Lange Worter\0"
-	/*  1943 */ "Komplexitat\0"
-	/*  1955 */ "Zeichen\0"
-	/*  1963 */ "Tempo zuruck\0"
-	/*  1976 */ "Nacht\0"
-	/*  1982 */ "Dunkel\0"
-	/*  1989 */ "Hell\0"
-	/*  1994 */ "Ein\0"
-	/*  1998 */ "Aus\0"
-	/*  2002 */ "Schriftgrad\0"
-	/*  2014 */ "Schriftart\0"
-	/*  2025 */ "Phantomworter\0"
-	/*  2039 */ "Rotfokus\0"
-	/*  2048 */ "Laufweite\0"
-	/*  2058 */ "Anker\0"
-	/*  2064 */ "Guidebreite\0"
-	/*  2076 */ "Guidespalt\0"
-	/*  2087 */ "Zurucksetzen\0"
-	/*  2100 */ "tippen zum Ende\0"
-	/*  2116 */ "tippen zum Reset\0"
-	/*  2133 */ "Tippen aendern  L/R Probe\0"
-	/*  2159 */ "Tippen zuruck  L/R Probe\0"
-	/*  2184 */ "Tippen schalten  L/R Probe\0"
-	/*  2211 */ "Tippen wechseln  L/R Probe\0"
-	/*  2238 */ "Aktuelles Buch\0"
-	/*  2253 */ "Buchanfang\0"
-	/*  2264 */ "Buch neu\0"
-	/*  2273 */ "Sicher?\0"
-	/*  2281 */ "Nein, merken\0"
-	/*  2294 */ "Ja, neu\0"
-	/*  2302 */ "Keine Proben\0"
-	/*  2315 */ "Gross\0"
-	/*  2321 */ "Mittel\0"
-	/*  2328 */ "Klein\0"
-	/*  2334 */ "Seiten-Scroll\0"
-	/*  2348 */ "Restzeit\0"
-	/*  2357 */ "Genau\0"
-	/*  2363 */ "Schnell\0"
-	/*  2371 */ "Continua\0"
-	/*  2380 */ "Capitole\0"
-	/*  2389 */ "Setari\0"
-	/*  2396 */ "Oprire\0"
-	/*  2403 */ "Inapoi\0"
-	/*  2410 */ "Afisaj\0"
-	/*  2417 */ "Tipografie\0"
-	/*  2428 */ "Ritm cuvinte\0"
-	/*  2441 */ "Luminoz.\0"
-	/*  2450 */ "Limba\0"
-	/*  2456 */ "Mod citire\0"
-	/*  2467 */ "Cuvinte lungi\0"
-	/*  2481 */ "Complexitate\0"
-	/*  2494 */ "Punctuatie\0"
-	/*  2505 */ "Reset ritm\0"
-	/*  2516 */ "Noapte\0"
-	/*  2523 */ "Inchis\0"
-	/*  2530 */ "Deschis\0"
-	/*  2538 */ "Pornit\0"
-	/*  2545 */ "Oprit\0"
-	/*  2551 */ "Marime\0"
-	/*  2558 */ "Font\0"
-	/*  2563 */ "Cuvinte fantoma\0"
-	/*  2579 */ "Accent rosu\0"
-	/*  2591 */ "Spatiere\0"
-	/*  2600 */ "Ancora\0"
-	/*  2607 */ "Latime ghid\0"
-	/*  2619 */ "Spatiu ghid\0"
-	/*  2631 */ "Resetare\0"
-	/*  2640 */ "atinge iesire\0"
-	/*  2654 */ "atinge reset\0"
-	/*  2667 */ "Atinge schimba  S/D proba\0"
-	/*  2693 */ "Atinge iesi  S/D proba\0"
-	/*  2716 */ "Atinge comuta  S/D proba\0"
-	/*  2741 */ "Atinge ciclu  S/D proba\0"
-	/*  2765 */ "Cartea curenta\0"
-	/*  2780 */ "Inceput\0"
-	/*  2788 */ "Inceputul cartii\0"
-	/*  2805 */ "Reporneste cartea\0"
-	/*  2823 */ "Sigur?\0"
-	/*  2830 */ "Nu, pastreaza\0"
-	/*  2844 */ "Da, reporneste\0"
-	/*  2859 */ "Fara probe\0"
-	/*  2870 */ "Mare\0"
-	/*  2875 */ "Mediu\0"
-	/*  2881 */ "Mic\0"
-	/*  2885 */ "Derulare pagina\0"
-	/*  2901 */ "Timp ramas\0"
-	/*  2912 */ "Exact\0"
-	/*  2918 */ "Rapid\0"
-	/*  2924 */ "Wznow\0"
-	/*  2930 */ "Rozdzialy\0"
-	/*  2940 */ "Biblioteka\0"
-	/*  2951 */ "Ustawienia\0"
-	/*  2962 */ "Wylacz\0"
-	/*  2969 */ "Wroc\0"
-	/*  2974 */ "Ekran\0"
-	/*  2980 */ "Typografia\0"
-	/*  2991 */ "Tempo slow\0"
-	/*  3002 */ "Motyw\0"
-	/*  3008 */ "Jasnosc\0"
-	/*  3016 */ "Jezyk\0"
-	/*  3022 */ "Tryb czyt.\0"
-	/*  3033 */ "Dlugie slowa\0"
-	/*  3046 */ "Zlozonosc\0"
-	/*  3056 */ "Interpunk.\0"
-	/*  3067 */ "Reset tempa\0"
-	/*  3079 */ "Noc\0"
-	/*  3083 */ "Ciemny\0"
-	/*  3090 */ "Jasny\0"
-	/*  3096 */ "Tak\0"
-	/*  3100 */ "Nie\0"
-	/*  3104 */ "Rozmiar\0"
-	/*  3112 */ "Kroj\0"
-	/*  3117 */ "Slowa widma\0"
-	/*  3129 */ "Czerwony\0"
-	/*  3138 */ "Odstepy\0"
-	/*  3146 */ "Kotwica\0"
-	/*  3154 */ "Szer. guide\0"
-	/*  3166 */ "Przerwa guide\0"
-	/*  3180 */ "dotknij wyjscie\0"
-	/*  3196 */ "dotknij reset\0"
-	/*  3210 */ "Dotknij zmien  L/R probka\0"
-	/*  3236 */ "Dotknij wyjdz  L/R probka\0"
-	/*  3262 */ "Dotknij przel.  L/R probka\0"
-	/*  3289 */ "Dotknij cykl  L/R probka\0"
-	/*  3314 */ "Biezaca ksiazka\0"
-	/*  3330 */ "Poczatek ksiazki\0"
-	/*  3347 */ "Restart ksiazki\0"
-	/*  3363 */ "Na pewno?\0"
-	/*  3373 */ "Nie, zostaw\0"
-	/*  3385 */ "Tak, restart\0"
-	/*  3398 */ "Brak probek\0"
-	/*  3410 */ "Duzy\0"
-	/*  3415 */ "Sredni\0"
-	/*  3422 */ "Maly\0"
-	/*  3427 */ "Scroll strony\0"
-	/*  3441 */ "Pozostaly czas\0"
-	/*  3456 */ "Dokladny\0"
-	/*  3465 */ "Szybki\0";
+	/*    47 */ "\u65E5\u672C\u8A9E\0"
+	/*    57 */ "\u7B80\u4F53\u4E2D\u6587\0"
+	/*    70 */ "\uD55C\uAD6D\uC5B4\0"
+	/*    80 */ "Resume\0"
+	/*    87 */ "Chapters\0"
+	/*    96 */ "Library\0"
+	/*   104 */ "Settings\0"
+	/*   113 */ "Power off\0"
+	/*   123 */ "Back\0"
+	/*   128 */ "Display\0"
+	/*   136 */ "Typography tune\0"
+	/*   152 */ "Word pacing\0"
+	/*   164 */ "Theme\0"
+	/*   170 */ "Brightness\0"
+	/*   181 */ "Language\0"
+	/*   190 */ "Reading mode\0"
+	/*   203 */ "Long words\0"
+	/*   214 */ "Complexity\0"
+	/*   225 */ "Punctuation\0"
+	/*   237 */ "Reset pacing\0"
+	/*   250 */ "Night\0"
+	/*   256 */ "Dark\0"
+	/*   261 */ "Light\0"
+	/*   267 */ "On\0"
+	/*   270 */ "Off\0"
+	/*   274 */ "Font size\0"
+	/*   284 */ "Typeface\0"
+	/*   293 */ "Phantom words\0"
+	/*   307 */ "Red highlight\0"
+	/*   321 */ "Tracking\0"
+	/*   330 */ "Anchor\0"
+	/*   337 */ "Guide width\0"
+	/*   349 */ "Guide gap\0"
+	/*   359 */ "Reset\0"
+	/*   365 */ "Typography\0"
+	/*   376 */ "tap to exit\0"
+	/*   388 */ "tap to reset\0"
+	/*   401 */ "Tap change  L/R sample\0"
+	/*   424 */ "Tap exit  L/R sample\0"
+	/*   445 */ "Tap toggle  L/R sample\0"
+	/*   468 */ "Tap cycle  L/R sample\0"
+	/*   490 */ "Current book\0"
+	/*   503 */ "Start\0"
+	/*   509 */ "Start of book\0"
+	/*   523 */ "Restart book\0"
+	/*   536 */ "Are you sure?\0"
+	/*   550 */ "No, keep place\0"
+	/*   565 */ "Yes, restart\0"
+	/*   578 */ "No samples\0"
+	/*   589 */ "Large\0"
+	/*   595 */ "Medium\0"
+	/*   602 */ "Small\0"
+	/*   608 */ "Standard\0"
+	/*   617 */ "RSVP\0"
+	/*   622 */ "Page scroll\0"
+	/*   634 */ "Time estimate\0"
+	/*   648 */ "Accurate\0"
+	/*   657 */ "Fast\0"
+	/*   662 */ "Books\0"
+	/*   668 */ "Articles\0"
+	/*   677 */ "Sync\0"
+	/*   682 */ "Reanudar\0"
+	/*   691 */ "Capitulos\0"
+	/*   701 */ "Biblioteca\0"
+	/*   712 */ "Ajustes\0"
+	/*   720 */ "Apagar\0"
+	/*   727 */ "Atras\0"
+	/*   733 */ "Pantalla\0"
+	/*   742 */ "Tipografia\0"
+	/*   753 */ "Ritmo lectura\0"
+	/*   767 */ "Tema\0"
+	/*   772 */ "Brillo\0"
+	/*   779 */ "Idioma\0"
+	/*   786 */ "Modo lectura\0"
+	/*   799 */ "Palabras largas\0"
+	/*   815 */ "Complejidad\0"
+	/*   827 */ "Puntuacion\0"
+	/*   838 */ "Restablecer ritmo\0"
+	/*   856 */ "Noche\0"
+	/*   862 */ "Oscuro\0"
+	/*   869 */ "Claro\0"
+	/*   875 */ "Si\0"
+	/*   878 */ "No\0"
+	/*   881 */ "Tamano\0"
+	/*   888 */ "Fuente\0"
+	/*   895 */ "Palabras fantasma\0"
+	/*   913 */ "Rojo\0"
+	/*   918 */ "Espaciado\0"
+	/*   928 */ "Ancla\0"
+	/*   934 */ "Ancho guia\0"
+	/*   945 */ "Hueco guia\0"
+	/*   956 */ "Restablecer\0"
+	/*   968 */ "toca salir\0"
+	/*   979 */ "toca reiniciar\0"
+	/*   994 */ "Toca cambiar L/R muestra\0"
+	/*  1019 */ "Toca salir L/R muestra\0"
+	/*  1042 */ "Toca alternar L/R muestra\0"
+	/*  1068 */ "Toca ciclo L/R muestra\0"
+	/*  1091 */ "Libro actual\0"
+	/*  1104 */ "Inicio\0"
+	/*  1111 */ "Inicio del libro\0"
+	/*  1128 */ "Reiniciar libro\0"
+	/*  1144 */ "Seguro?\0"
+	/*  1152 */ "No, conservar\0"
+	/*  1166 */ "Si, reiniciar\0"
+	/*  1180 */ "Sin muestras\0"
+	/*  1193 */ "Grande\0"
+	/*  1200 */ "Mediano\0"
+	/*  1208 */ "Pequeno\0"
+	/*  1216 */ "Estandar\0"
+	/*  1225 */ "Scroll pagina\0"
+	/*  1239 */ "Tiempo restante\0"
+	/*  1255 */ "Preciso\0"
+	/*  1263 */ "Rapido\0"
+	/*  1270 */ "Libros\0"
+	/*  1277 */ "Articulos\0"
+	/*  1287 */ "Sincron.\0"
+	/*  1296 */ "Reprendre\0"
+	/*  1306 */ "Chapitres\0"
+	/*  1316 */ "Bibliotheque\0"
+	/*  1329 */ "Reglages\0"
+	/*  1338 */ "Eteindre\0"
+	/*  1347 */ "Retour\0"
+	/*  1354 */ "Affichage\0"
+	/*  1364 */ "Typographie\0"
+	/*  1376 */ "Rythme mots\0"
+	/*  1388 */ "Luminosite\0"
+	/*  1399 */ "Langue\0"
+	/*  1406 */ "Mode lecture\0"
+	/*  1419 */ "Mots longs\0"
+	/*  1430 */ "Complexite\0"
+	/*  1441 */ "Ponctuation\0"
+	/*  1453 */ "Reinit. rythme\0"
+	/*  1468 */ "Nuit\0"
+	/*  1473 */ "Sombre\0"
+	/*  1480 */ "Clair\0"
+	/*  1486 */ "Oui\0"
+	/*  1490 */ "Non\0"
+	/*  1494 */ "Taille\0"
+	/*  1501 */ "Police\0"
+	/*  1508 */ "Mots fantomes\0"
+	/*  1522 */ "Accent rouge\0"
+	/*  1535 */ "Espacement\0"
+	/*  1546 */ "Ancre\0"
+	/*  1552 */ "Largeur guide\0"
+	/*  1566 */ "Ecart guide\0"
+	/*  1578 */ "Reinit.\0"
+	/*  1586 */ "toucher sortie\0"
+	/*  1601 */ "toucher reinit.\0"
+	/*  1617 */ "Touchez change  G/D echant.\0"
+	/*  1645 */ "Touchez sortie  G/D echant.\0"
+	/*  1673 */ "Touchez option  G/D echant.\0"
+	/*  1701 */ "Touchez cycle  G/D echant.\0"
+	/*  1728 */ "Livre actuel\0"
+	/*  1741 */ "Debut\0"
+	/*  1747 */ "Debut du livre\0"
+	/*  1762 */ "Relancer livre\0"
+	/*  1777 */ "Confirmer ?\0"
+	/*  1789 */ "Non, garder\0"
+	/*  1801 */ "Oui, relancer\0"
+	/*  1815 */ "Aucun exemple\0"
+	/*  1829 */ "Grand\0"
+	/*  1835 */ "Moyen\0"
+	/*  1841 */ "Petit\0"
+	/*  1847 */ "Defilement page\0"
+	/*  1863 */ "Temps restant\0"
+	/*  1877 */ "Precis\0"
+	/*  1884 */ "Rapide\0"
+	/*  1891 */ "Livres\0"
+	/*  1898 */ "Weiter\0"
+	/*  1905 */ "Kapitel\0"
+	/*  1913 */ "Bibliothek\0"
+	/*  1924 */ "Optionen\0"
+	/*  1933 */ "Ausschalten\0"
+	/*  1945 */ "Zuruck\0"
+	/*  1952 */ "Anzeige\0"
+	/*  1960 */ "Typografie\0"
+	/*  1971 */ "Lesetempo\0"
+	/*  1981 */ "Thema\0"
+	/*  1987 */ "Helligkeit\0"
+	/*  1998 */ "Sprache\0"
+	/*  2006 */ "Lesemodus\0"
+	/*  2016 */ "Lange Worter\0"
+	/*  2029 */ "Komplexitat\0"
+	/*  2041 */ "Zeichen\0"
+	/*  2049 */ "Tempo zuruck\0"
+	/*  2062 */ "Nacht\0"
+	/*  2068 */ "Dunkel\0"
+	/*  2075 */ "Hell\0"
+	/*  2080 */ "Ein\0"
+	/*  2084 */ "Aus\0"
+	/*  2088 */ "Schriftgrad\0"
+	/*  2100 */ "Schriftart\0"
+	/*  2111 */ "Phantomworter\0"
+	/*  2125 */ "Rotfokus\0"
+	/*  2134 */ "Laufweite\0"
+	/*  2144 */ "Anker\0"
+	/*  2150 */ "Guidebreite\0"
+	/*  2162 */ "Guidespalt\0"
+	/*  2173 */ "Zurucksetzen\0"
+	/*  2186 */ "tippen zum Ende\0"
+	/*  2202 */ "tippen zum Reset\0"
+	/*  2219 */ "Tippen aendern  L/R Probe\0"
+	/*  2245 */ "Tippen zuruck  L/R Probe\0"
+	/*  2270 */ "Tippen schalten  L/R Probe\0"
+	/*  2297 */ "Tippen wechseln  L/R Probe\0"
+	/*  2324 */ "Aktuelles Buch\0"
+	/*  2339 */ "Buchanfang\0"
+	/*  2350 */ "Buch neu\0"
+	/*  2359 */ "Sicher?\0"
+	/*  2367 */ "Nein, merken\0"
+	/*  2380 */ "Ja, neu\0"
+	/*  2388 */ "Keine Proben\0"
+	/*  2401 */ "Gross\0"
+	/*  2407 */ "Mittel\0"
+	/*  2414 */ "Klein\0"
+	/*  2420 */ "Seiten-Scroll\0"
+	/*  2434 */ "Restzeit\0"
+	/*  2443 */ "Genau\0"
+	/*  2449 */ "Schnell\0"
+	/*  2457 */ "Bucher\0"
+	/*  2464 */ "Artikel\0"
+	/*  2472 */ "Continua\0"
+	/*  2481 */ "Capitole\0"
+	/*  2490 */ "Setari\0"
+	/*  2497 */ "Oprire\0"
+	/*  2504 */ "Inapoi\0"
+	/*  2511 */ "Afisaj\0"
+	/*  2518 */ "Tipografie\0"
+	/*  2529 */ "Ritm cuvinte\0"
+	/*  2542 */ "Luminoz.\0"
+	/*  2551 */ "Limba\0"
+	/*  2557 */ "Mod citire\0"
+	/*  2568 */ "Cuvinte lungi\0"
+	/*  2582 */ "Complexitate\0"
+	/*  2595 */ "Punctuatie\0"
+	/*  2606 */ "Reset ritm\0"
+	/*  2617 */ "Noapte\0"
+	/*  2624 */ "Inchis\0"
+	/*  2631 */ "Deschis\0"
+	/*  2639 */ "Pornit\0"
+	/*  2646 */ "Oprit\0"
+	/*  2652 */ "Marime\0"
+	/*  2659 */ "Font\0"
+	/*  2664 */ "Cuvinte fantoma\0"
+	/*  2680 */ "Accent rosu\0"
+	/*  2692 */ "Spatiere\0"
+	/*  2701 */ "Ancora\0"
+	/*  2708 */ "Latime ghid\0"
+	/*  2720 */ "Spatiu ghid\0"
+	/*  2732 */ "Resetare\0"
+	/*  2741 */ "atinge iesire\0"
+	/*  2755 */ "atinge reset\0"
+	/*  2768 */ "Atinge schimba  S/D proba\0"
+	/*  2794 */ "Atinge iesi  S/D proba\0"
+	/*  2817 */ "Atinge comuta  S/D proba\0"
+	/*  2842 */ "Atinge ciclu  S/D proba\0"
+	/*  2866 */ "Cartea curenta\0"
+	/*  2881 */ "Inceput\0"
+	/*  2889 */ "Inceputul cartii\0"
+	/*  2906 */ "Reporneste cartea\0"
+	/*  2924 */ "Sigur?\0"
+	/*  2931 */ "Nu, pastreaza\0"
+	/*  2945 */ "Da, reporneste\0"
+	/*  2960 */ "Fara probe\0"
+	/*  2971 */ "Mare\0"
+	/*  2976 */ "Mediu\0"
+	/*  2982 */ "Mic\0"
+	/*  2986 */ "Derulare pagina\0"
+	/*  3002 */ "Timp ramas\0"
+	/*  3013 */ "Exact\0"
+	/*  3019 */ "Rapid\0"
+	/*  3025 */ "Carti\0"
+	/*  3031 */ "Articole\0"
+	/*  3040 */ "Wznow\0"
+	/*  3046 */ "Rozdzialy\0"
+	/*  3056 */ "Biblioteka\0"
+	/*  3067 */ "Ustawienia\0"
+	/*  3078 */ "Wylacz\0"
+	/*  3085 */ "Wroc\0"
+	/*  3090 */ "Ekran\0"
+	/*  3096 */ "Typografia\0"
+	/*  3107 */ "Tempo slow\0"
+	/*  3118 */ "Motyw\0"
+	/*  3124 */ "Jasnosc\0"
+	/*  3132 */ "Jezyk\0"
+	/*  3138 */ "Tryb czyt.\0"
+	/*  3149 */ "Dlugie slowa\0"
+	/*  3162 */ "Zlozonosc\0"
+	/*  3172 */ "Interpunk.\0"
+	/*  3183 */ "Reset tempa\0"
+	/*  3195 */ "Noc\0"
+	/*  3199 */ "Ciemny\0"
+	/*  3206 */ "Jasny\0"
+	/*  3212 */ "Tak\0"
+	/*  3216 */ "Nie\0"
+	/*  3220 */ "Rozmiar\0"
+	/*  3228 */ "Kroj\0"
+	/*  3233 */ "Slowa widma\0"
+	/*  3245 */ "Czerwony\0"
+	/*  3254 */ "Odstepy\0"
+	/*  3262 */ "Kotwica\0"
+	/*  3270 */ "Szer. guide\0"
+	/*  3282 */ "Przerwa guide\0"
+	/*  3296 */ "dotknij wyjscie\0"
+	/*  3312 */ "dotknij reset\0"
+	/*  3326 */ "Dotknij zmien  L/R probka\0"
+	/*  3352 */ "Dotknij wyjdz  L/R probka\0"
+	/*  3378 */ "Dotknij przel.  L/R probka\0"
+	/*  3405 */ "Dotknij cykl  L/R probka\0"
+	/*  3430 */ "Biezaca ksiazka\0"
+	/*  3446 */ "Poczatek ksiazki\0"
+	/*  3463 */ "Restart ksiazki\0"
+	/*  3479 */ "Na pewno?\0"
+	/*  3489 */ "Nie, zostaw\0"
+	/*  3501 */ "Tak, restart\0"
+	/*  3514 */ "Brak probek\0"
+	/*  3526 */ "Duzy\0"
+	/*  3531 */ "Sredni\0"
+	/*  3538 */ "Maly\0"
+	/*  3543 */ "Scroll strony\0"
+	/*  3557 */ "Pozostaly czas\0"
+	/*  3572 */ "Dokladny\0"
+	/*  3581 */ "Szybki\0"
+	/*  3588 */ "Ksiazki\0"
+	/*  3596 */ "Artykuly\0"
+	/*  3605 */ "\u7D9A\u304D\u304B\u3089\0"
+	/*  3618 */ "\u7AE0\0"
+	/*  3622 */ "\u672C\u68DA\0"
+	/*  3629 */ "\u8A2D\u5B9A\0"
+	/*  3636 */ "\u96FB\u6E90\u30AA\u30D5\0"
+	/*  3649 */ "\u623B\u308B\0"
+	/*  3656 */ "\u8868\u793A\0"
+	/*  3663 */ "\u6587\u5B57\u8ABF\u6574\0"
+	/*  3676 */ "\u901F\u5EA6\u8ABF\u6574\0"
+	/*  3689 */ "\u30C6\u30FC\u30DE\0"
+	/*  3699 */ "\u660E\u308B\u3055\0"
+	/*  3709 */ "\u8A00\u8A9E\0"
+	/*  3716 */ "\u8AAD\u66F8\u30E2\u30FC\u30C9\0"
+	/*  3732 */ "\u9577\u3044\u5358\u8A9E\0"
+	/*  3745 */ "\u8907\u96D1\u3055\0"
+	/*  3755 */ "\u53E5\u8AAD\u70B9\0"
+	/*  3765 */ "\u901F\u5EA6\u30EA\u30BB\u30C3\u30C8\0"
+	/*  3784 */ "\u30CA\u30A4\u30C8\0"
+	/*  3794 */ "\u30C0\u30FC\u30AF\0"
+	/*  3804 */ "\u30E9\u30A4\u30C8\0"
+	/*  3814 */ "\u30AA\u30F3\0"
+	/*  3821 */ "\u30AA\u30D5\0"
+	/*  3828 */ "\u6587\u5B57\u30B5\u30A4\u30BA\0"
+	/*  3844 */ "\u66F8\u4F53\0"
+	/*  3851 */ "\u524D\u5F8C\u306E\u8A9E\0"
+	/*  3864 */ "\u8D64\u3044\u5F37\u8ABF\0"
+	/*  3877 */ "\u5B57\u9593\0"
+	/*  3884 */ "\u57FA\u6E96\u4F4D\u7F6E\0"
+	/*  3897 */ "\u30AC\u30A4\u30C9\u5E45\0"
+	/*  3910 */ "\u30AC\u30A4\u30C9\u9593\u9694\0"
+	/*  3926 */ "\u30EA\u30BB\u30C3\u30C8\0"
+	/*  3939 */ "\u6587\u5B57\u8A2D\u5B9A\0"
+	/*  3952 */ "\u30BF\u30C3\u30D7\u3067\u623B\u308B\0"
+	/*  3971 */ "\u30BF\u30C3\u30D7\u3067\u30EA\u30BB\u30C3\u30C8\0"
+	/*  3996 */ "\u30BF\u30C3\u30D7\u5909\u66F4 \u5DE6\u53F3\u3067\u4F8B\u6587\0"
+	/*  4028 */ "\u30BF\u30C3\u30D7\u7D42\u4E86 \u5DE6\u53F3\u3067\u4F8B\u6587\0"
+	/*  4060 */ "\u30BF\u30C3\u30D7\u5207\u66FF \u5DE6\u53F3\u3067\u4F8B\u6587\0"
+	/*  4092 */ "\u30BF\u30C3\u30D7\u5DE1\u56DE \u5DE6\u53F3\u3067\u4F8B\u6587\0"
+	/*  4124 */ "\u73FE\u5728\u306E\u672C\0"
+	/*  4137 */ "\u6700\u521D\0"
+	/*  4144 */ "\u672C\u306E\u6700\u521D\0"
+	/*  4157 */ "\u6700\u521D\u304B\u3089\0"
+	/*  4170 */ "\u3088\u308D\u3057\u3044\u3067\u3059\u304B\uFF1F\0"
+	/*  4195 */ "\u3044\u3044\u3048\u3001\u73FE\u5728\u5730\0"
+	/*  4217 */ "\u306F\u3044\u3001\u6700\u521D\u304B\u3089\0"
+	/*  4239 */ "\u4F8B\u6587\u306A\u3057\0"
+	/*  4252 */ "\u5927\0"
+	/*  4256 */ "\u4E2D\0"
+	/*  4260 */ "\u5C0F\0"
+	/*  4264 */ "\u6A19\u6E96\0"
+	/*  4271 */ "\u30DA\u30FC\u30B8\u9001\u308A\0"
+	/*  4287 */ "\u6B8B\u308A\u6642\u9593\0"
+	/*  4300 */ "\u6B63\u78BA\0"
+	/*  4307 */ "\u9AD8\u901F\0"
+	/*  4314 */ "\u672C\0"
+	/*  4318 */ "\u8A18\u4E8B\0"
+	/*  4325 */ "\u540C\u671F\0"
+	/*  4332 */ "\u7EE7\u7EED\0"
+	/*  4339 */ "\u7AE0\u8282\0"
+	/*  4346 */ "\u4E66\u5E93\0"
+	/*  4353 */ "\u8BBE\u7F6E\0"
+	/*  4360 */ "\u5173\u673A\0"
+	/*  4367 */ "\u8FD4\u56DE\0"
+	/*  4374 */ "\u663E\u793A\0"
+	/*  4381 */ "\u5B57\u4F53\u8C03\u6574\0"
+	/*  4394 */ "\u8282\u594F\0"
+	/*  4401 */ "\u4E3B\u9898\0"
+	/*  4408 */ "\u4EAE\u5EA6\0"
+	/*  4415 */ "\u8BED\u8A00\0"
+	/*  4422 */ "\u9605\u8BFB\u6A21\u5F0F\0"
+	/*  4435 */ "\u957F\u8BCD\0"
+	/*  4442 */ "\u590D\u6742\u5EA6\0"
+	/*  4452 */ "\u6807\u70B9\0"
+	/*  4459 */ "\u91CD\u7F6E\u8282\u594F\0"
+	/*  4472 */ "\u591C\u95F4\0"
+	/*  4479 */ "\u6DF1\u8272\0"
+	/*  4486 */ "\u6D45\u8272\0"
+	/*  4493 */ "\u5F00\0"
+	/*  4497 */ "\u5173\0"
+	/*  4501 */ "\u5B57\u53F7\0"
+	/*  4508 */ "\u5B57\u4F53\0"
+	/*  4515 */ "\u4E0A\u4E0B\u6587\u8BCD\0"
+	/*  4528 */ "\u7EA2\u8272\u9AD8\u4EAE\0"
+	/*  4541 */ "\u5B57\u8DDD\0"
+	/*  4548 */ "\u951A\u70B9\0"
+	/*  4555 */ "\u5BFC\u5F15\u5BBD\u5EA6\0"
+	/*  4568 */ "\u5BFC\u5F15\u95F4\u8DDD\0"
+	/*  4581 */ "\u91CD\u7F6E\0"
+	/*  4588 */ "\u6392\u7248\0"
+	/*  4595 */ "\u70B9\u51FB\u9000\u51FA\0"
+	/*  4608 */ "\u70B9\u51FB\u91CD\u7F6E\0"
+	/*  4621 */ "\u70B9\u51FB\u66F4\u6539 \u5DE6\u53F3\u6362\u4F8B\0"
+	/*  4647 */ "\u70B9\u51FB\u9000\u51FA \u5DE6\u53F3\u6362\u4F8B\0"
+	/*  4673 */ "\u70B9\u51FB\u5207\u6362 \u5DE6\u53F3\u6362\u4F8B\0"
+	/*  4699 */ "\u70B9\u51FB\u8F6E\u6362 \u5DE6\u53F3\u6362\u4F8B\0"
+	/*  4725 */ "\u5F53\u524D\u4E66\u7C4D\0"
+	/*  4738 */ "\u5F00\u59CB\0"
+	/*  4745 */ "\u4E66\u7C4D\u5F00\u5934\0"
+	/*  4758 */ "\u91CD\u65B0\u5F00\u59CB\0"
+	/*  4771 */ "\u786E\u5B9A\u5417\uFF1F\0"
+	/*  4784 */ "\u5426\uFF0C\u4FDD\u7559\u8FDB\u5EA6\0"
+	/*  4803 */ "\u662F\uFF0C\u91CD\u65B0\u5F00\u59CB\0"
+	/*  4822 */ "\u65E0\u6837\u672C\0"
+	/*  4832 */ "\u6807\u51C6\0"
+	/*  4839 */ "\u7FFB\u9875\0"
+	/*  4846 */ "\u5269\u4F59\u65F6\u95F4\0"
+	/*  4859 */ "\u7CBE\u786E\0"
+	/*  4866 */ "\u5FEB\u901F\0"
+	/*  4873 */ "\u4E66\u7C4D\0"
+	/*  4880 */ "\u6587\u7AE0\0"
+	/*  4887 */ "\u540C\u6B65\0"
+	/*  4894 */ "\uC774\uC5B4\uBCF4\uAE30\0"
+	/*  4907 */ "\uCC55\uD130\0"
+	/*  4914 */ "\uC11C\uC7AC\0"
+	/*  4921 */ "\uC124\uC815\0"
+	/*  4928 */ "\uC804\uC6D0 \uB044\uAE30\0"
+	/*  4942 */ "\uB4A4\uB85C\0"
+	/*  4949 */ "\uD654\uBA74\0"
+	/*  4956 */ "\uC11C\uCCB4 \uC870\uC815\0"
+	/*  4970 */ "\uC18D\uB3C4 \uC870\uC808\0"
+	/*  4984 */ "\uD14C\uB9C8\0"
+	/*  4991 */ "\uBC1D\uAE30\0"
+	/*  4998 */ "\uC5B8\uC5B4\0"
+	/*  5005 */ "\uC77D\uAE30 \uBAA8\uB4DC\0"
+	/*  5019 */ "\uAE34 \uB2E8\uC5B4\0"
+	/*  5030 */ "\uBCF5\uC7A1\uB3C4\0"
+	/*  5040 */ "\uBB38\uC7A5\uBD80\uD638\0"
+	/*  5053 */ "\uC18D\uB3C4 \uCD08\uAE30\uD654\0"
+	/*  5070 */ "\uC57C\uAC04\0"
+	/*  5077 */ "\uB2E4\uD06C\0"
+	/*  5084 */ "\uB77C\uC774\uD2B8\0"
+	/*  5094 */ "\uCF1C\uAE30\0"
+	/*  5101 */ "\uB044\uAE30\0"
+	/*  5108 */ "\uAE00\uC790 \uD06C\uAE30\0"
+	/*  5122 */ "\uC11C\uCCB4\0"
+	/*  5129 */ "\uBB38\uB9E5 \uB2E8\uC5B4\0"
+	/*  5143 */ "\uBE68\uAC15 \uAC15\uC870\0"
+	/*  5157 */ "\uC790\uAC04\0"
+	/*  5164 */ "\uAE30\uC900\uC810\0"
+	/*  5174 */ "\uAC00\uC774\uB4DC \uD3ED\0"
+	/*  5188 */ "\uAC00\uC774\uB4DC \uAC04\uACA9\0"
+	/*  5205 */ "\uCD08\uAE30\uD654\0"
+	/*  5215 */ "\uD0C0\uC774\uD3EC\uADF8\uB798\uD53C\0"
+	/*  5234 */ "\uD0ED\uD558\uC5EC \uC885\uB8CC\0"
+	/*  5251 */ "\uD0ED\uD558\uC5EC \uCD08\uAE30\uD654\0"
+	/*  5271 */ "\uD0ED \uBCC0\uACBD \uC88C\uC6B0 \uC608\uBB38\0"
+	/*  5296 */ "\uD0ED \uC885\uB8CC \uC88C\uC6B0 \uC608\uBB38\0"
+	/*  5321 */ "\uD0ED \uC804\uD658 \uC88C\uC6B0 \uC608\uBB38\0"
+	/*  5346 */ "\uD0ED \uC21C\uD658 \uC88C\uC6B0 \uC608\uBB38\0"
+	/*  5371 */ "\uD604\uC7AC \uCC45\0"
+	/*  5382 */ "\uCC98\uC74C\0"
+	/*  5389 */ "\uCC45 \uCC98\uC74C\0"
+	/*  5400 */ "\uCC98\uC74C\uBD80\uD130\0"
+	/*  5413 */ "\uACC4\uC18D\uD560\uAE4C\uC694?\0"
+	/*  5430 */ "\uC544\uB2C8\uC694, \uC720\uC9C0\0"
+	/*  5448 */ "\uC608, \uCC98\uC74C\uBD80\uD130\0"
+	/*  5466 */ "\uC608\uBB38 \uC5C6\uC74C\0"
+	/*  5480 */ "\uD06C\uAC8C\0"
+	/*  5487 */ "\uBCF4\uD1B5\0"
+	/*  5494 */ "\uC791\uAC8C\0"
+	/*  5501 */ "\uD45C\uC900\0"
+	/*  5508 */ "\uD398\uC774\uC9C0 \uB118\uAE40\0"
+	/*  5525 */ "\uB0A8\uC740 \uC2DC\uAC04\0"
+	/*  5539 */ "\uC815\uD655\0"
+	/*  5546 */ "\uBE60\uB984\0"
+	/*  5553 */ "\uB3C4\uC11C\0"
+	/*  5560 */ "\uAE30\uC0AC\0"
+	/*  5567 */ "\uB3D9\uAE30\uD654\0";
 
 constexpr std::array<uint16_t, kLanguageCount> kLanguageNameOffsets = {{
 	/* English  */ 0,
@@ -340,6 +524,9 @@ constexpr std::array<uint16_t, kLanguageCount> kLanguageNameOffsets = {{
 	/* German   */ 25,
 	/* Romanian */ 33,
 	/* Polish   */ 40,
+	/* Japanese */ 47,
+	/* Chinese  */ 57,
+	/* Korean   */ 70,
 }};
 
 using TextOffsetRow = std::array<uint16_t, kTextCount>;
@@ -348,351 +535,552 @@ using TextOffsetTable = std::array<TextOffsetRow, kLanguageCount>;
 constexpr TextOffsetTable kTextOffsets = {{
 	// English (en)
 	{{
-		/* Resume                   */ 47,
-		/* Chapters                 */ 54,
-		/* Library                  */ 63,
-		/* Settings                 */ 71,
-		/* PowerOff                 */ 80,
-		/* Back                     */ 90,
-		/* Display                  */ 95,
-		/* TypographyTune           */ 103,
-		/* WordPacing               */ 119,
-		/* Theme                    */ 131,
-		/* Brightness               */ 137,
-		/* Language                 */ 148,
-		/* ReadingMode              */ 157,
-		/* LongWords                */ 170,
-		/* Complexity               */ 181,
-		/* Punctuation              */ 192,
-		/* ResetPacing              */ 204,
-		/* Night                    */ 217,
-		/* Dark                     */ 223,
-		/* Light                    */ 228,
-		/* On                       */ 234,
-		/* Off                      */ 237,
-		/* FontSize                 */ 241,
-		/* Typeface                 */ 251,
-		/* PhantomWords             */ 260,
-		/* RedHighlight             */ 274,
-		/* Tracking                 */ 288,
-		/* Anchor                   */ 297,
-		/* GuideWidth               */ 304,
-		/* GuideGap                 */ 316,
-		/* Reset                    */ 326,
-		/* Typography               */ 332,
-		/* TapToExit                */ 343,
-		/* TapToReset               */ 355,
-		/* TapChangeSample          */ 368,
-		/* TapExitSample            */ 391,
-		/* TapToggleSample          */ 412,
-		/* TapCycleSample           */ 435,
-		/* CurrentBook              */ 457,
-		/* Start                    */ 470,
-		/* StartOfBook              */ 476,
-		/* RestartBook              */ 490,
-		/* AreYouSure               */ 503,
-		/* NoKeepPlace              */ 517,
-		/* YesRestart               */ 532,
-		/* NoSamples                */ 545,
-		/* Large                    */ 556,
-		/* Medium                   */ 562,
-		/* Small                    */ 569,
-		/* Standard                 */ 575,
-		/* RsvpMode                 */ 584,
-		/* ScrollMode               */ 589,
-		/* TimeEstimate             */ 601,
-		/* TimeEstimateAccurate     */ 615,
-		/* TimeEstimateFast         */ 624,
+		/* Resume                   */ 80,
+		/* Chapters                 */ 87,
+		/* Library                  */ 96,
+		/* Settings                 */ 104,
+		/* PowerOff                 */ 113,
+		/* Back                     */ 123,
+		/* Display                  */ 128,
+		/* TypographyTune           */ 136,
+		/* WordPacing               */ 152,
+		/* Theme                    */ 164,
+		/* Brightness               */ 170,
+		/* Language                 */ 181,
+		/* ReadingMode              */ 190,
+		/* LongWords                */ 203,
+		/* Complexity               */ 214,
+		/* Punctuation              */ 225,
+		/* ResetPacing              */ 237,
+		/* Night                    */ 250,
+		/* Dark                     */ 256,
+		/* Light                    */ 261,
+		/* On                       */ 267,
+		/* Off                      */ 270,
+		/* FontSize                 */ 274,
+		/* Typeface                 */ 284,
+		/* PhantomWords             */ 293,
+		/* RedHighlight             */ 307,
+		/* Tracking                 */ 321,
+		/* Anchor                   */ 330,
+		/* GuideWidth               */ 337,
+		/* GuideGap                 */ 349,
+		/* Reset                    */ 359,
+		/* Typography               */ 365,
+		/* TapToExit                */ 376,
+		/* TapToReset               */ 388,
+		/* TapChangeSample          */ 401,
+		/* TapExitSample            */ 424,
+		/* TapToggleSample          */ 445,
+		/* TapCycleSample           */ 468,
+		/* CurrentBook              */ 490,
+		/* Start                    */ 503,
+		/* StartOfBook              */ 509,
+		/* RestartBook              */ 523,
+		/* AreYouSure               */ 536,
+		/* NoKeepPlace              */ 550,
+		/* YesRestart               */ 565,
+		/* NoSamples                */ 578,
+		/* Large                    */ 589,
+		/* Medium                   */ 595,
+		/* Small                    */ 602,
+		/* Standard                 */ 608,
+		/* RsvpMode                 */ 617,
+		/* ScrollMode               */ 622,
+		/* TimeEstimate             */ 634,
+		/* TimeEstimateAccurate     */ 648,
+		/* TimeEstimateFast         */ 657,
+		/* Books                    */ 662,
+		/* Articles                 */ 668,
+		/* Sync                     */ 677,
 	}},
 	// Spanish (es)
 	{{
-		/* Resume                   */ 629,
-		/* Chapters                 */ 638,
-		/* Library                  */ 648,
-		/* Settings                 */ 659,
-		/* PowerOff                 */ 667,
-		/* Back                     */ 674,
-		/* Display                  */ 680,
-		/* TypographyTune           */ 689,
-		/* WordPacing               */ 700,
-		/* Theme                    */ 714,
-		/* Brightness               */ 719,
-		/* Language                 */ 726,
-		/* ReadingMode              */ 733,
-		/* LongWords                */ 746,
-		/* Complexity               */ 762,
-		/* Punctuation              */ 774,
-		/* ResetPacing              */ 785,
-		/* Night                    */ 803,
-		/* Dark                     */ 809,
-		/* Light                    */ 816,
-		/* On                       */ 822,
-		/* Off                      */ 825,
-		/* FontSize                 */ 828,
-		/* Typeface                 */ 835,
-		/* PhantomWords             */ 842,
-		/* RedHighlight             */ 860,
-		/* Tracking                 */ 865,
-		/* Anchor                   */ 875,
-		/* GuideWidth               */ 881,
-		/* GuideGap                 */ 892,
-		/* Reset                    */ 903,
-		/* Typography               */ 689,
-		/* TapToExit                */ 915,
-		/* TapToReset               */ 926,
-		/* TapChangeSample          */ 941,
-		/* TapExitSample            */ 966,
-		/* TapToggleSample          */ 989,
-		/* TapCycleSample           */ 1015,
-		/* CurrentBook              */ 1038,
-		/* Start                    */ 1051,
-		/* StartOfBook              */ 1058,
-		/* RestartBook              */ 1075,
-		/* AreYouSure               */ 1091,
-		/* NoKeepPlace              */ 1099,
-		/* YesRestart               */ 1113,
-		/* NoSamples                */ 1127,
-		/* Large                    */ 1140,
-		/* Medium                   */ 1147,
-		/* Small                    */ 1155,
-		/* Standard                 */ 1163,
-		/* RsvpMode                 */ 584,
-		/* ScrollMode               */ 1172,
-		/* TimeEstimate             */ 1186,
-		/* TimeEstimateAccurate     */ 1202,
-		/* TimeEstimateFast         */ 1210,
+		/* Resume                   */ 682,
+		/* Chapters                 */ 691,
+		/* Library                  */ 701,
+		/* Settings                 */ 712,
+		/* PowerOff                 */ 720,
+		/* Back                     */ 727,
+		/* Display                  */ 733,
+		/* TypographyTune           */ 742,
+		/* WordPacing               */ 753,
+		/* Theme                    */ 767,
+		/* Brightness               */ 772,
+		/* Language                 */ 779,
+		/* ReadingMode              */ 786,
+		/* LongWords                */ 799,
+		/* Complexity               */ 815,
+		/* Punctuation              */ 827,
+		/* ResetPacing              */ 838,
+		/* Night                    */ 856,
+		/* Dark                     */ 862,
+		/* Light                    */ 869,
+		/* On                       */ 875,
+		/* Off                      */ 878,
+		/* FontSize                 */ 881,
+		/* Typeface                 */ 888,
+		/* PhantomWords             */ 895,
+		/* RedHighlight             */ 913,
+		/* Tracking                 */ 918,
+		/* Anchor                   */ 928,
+		/* GuideWidth               */ 934,
+		/* GuideGap                 */ 945,
+		/* Reset                    */ 956,
+		/* Typography               */ 742,
+		/* TapToExit                */ 968,
+		/* TapToReset               */ 979,
+		/* TapChangeSample          */ 994,
+		/* TapExitSample            */ 1019,
+		/* TapToggleSample          */ 1042,
+		/* TapCycleSample           */ 1068,
+		/* CurrentBook              */ 1091,
+		/* Start                    */ 1104,
+		/* StartOfBook              */ 1111,
+		/* RestartBook              */ 1128,
+		/* AreYouSure               */ 1144,
+		/* NoKeepPlace              */ 1152,
+		/* YesRestart               */ 1166,
+		/* NoSamples                */ 1180,
+		/* Large                    */ 1193,
+		/* Medium                   */ 1200,
+		/* Small                    */ 1208,
+		/* Standard                 */ 1216,
+		/* RsvpMode                 */ 617,
+		/* ScrollMode               */ 1225,
+		/* TimeEstimate             */ 1239,
+		/* TimeEstimateAccurate     */ 1255,
+		/* TimeEstimateFast         */ 1263,
+		/* Books                    */ 1270,
+		/* Articles                 */ 1277,
+		/* Sync                     */ 1287,
 	}},
 	// French (fr)
 	{{
-		/* Resume                   */ 1217,
-		/* Chapters                 */ 1227,
-		/* Library                  */ 1237,
-		/* Settings                 */ 1250,
-		/* PowerOff                 */ 1259,
-		/* Back                     */ 1268,
-		/* Display                  */ 1275,
-		/* TypographyTune           */ 1285,
-		/* WordPacing               */ 1297,
-		/* Theme                    */ 131,
-		/* Brightness               */ 1309,
-		/* Language                 */ 1320,
-		/* ReadingMode              */ 1327,
-		/* LongWords                */ 1340,
-		/* Complexity               */ 1351,
-		/* Punctuation              */ 1362,
-		/* ResetPacing              */ 1374,
-		/* Night                    */ 1389,
-		/* Dark                     */ 1394,
-		/* Light                    */ 1401,
-		/* On                       */ 1407,
-		/* Off                      */ 1411,
-		/* FontSize                 */ 1415,
-		/* Typeface                 */ 1422,
-		/* PhantomWords             */ 1429,
-		/* RedHighlight             */ 1443,
-		/* Tracking                 */ 1456,
-		/* Anchor                   */ 1467,
-		/* GuideWidth               */ 1473,
-		/* GuideGap                 */ 1487,
-		/* Reset                    */ 1499,
-		/* Typography               */ 1285,
-		/* TapToExit                */ 1507,
-		/* TapToReset               */ 1522,
-		/* TapChangeSample          */ 1538,
-		/* TapExitSample            */ 1566,
-		/* TapToggleSample          */ 1594,
-		/* TapCycleSample           */ 1622,
-		/* CurrentBook              */ 1649,
-		/* Start                    */ 1662,
-		/* StartOfBook              */ 1668,
-		/* RestartBook              */ 1683,
-		/* AreYouSure               */ 1698,
-		/* NoKeepPlace              */ 1710,
-		/* YesRestart               */ 1722,
-		/* NoSamples                */ 1736,
-		/* Large                    */ 1750,
-		/* Medium                   */ 1756,
-		/* Small                    */ 1762,
-		/* Standard                 */ 575,
-		/* RsvpMode                 */ 584,
-		/* ScrollMode               */ 1768,
-		/* TimeEstimate             */ 1784,
-		/* TimeEstimateAccurate     */ 1798,
-		/* TimeEstimateFast         */ 1805,
+		/* Resume                   */ 1296,
+		/* Chapters                 */ 1306,
+		/* Library                  */ 1316,
+		/* Settings                 */ 1329,
+		/* PowerOff                 */ 1338,
+		/* Back                     */ 1347,
+		/* Display                  */ 1354,
+		/* TypographyTune           */ 1364,
+		/* WordPacing               */ 1376,
+		/* Theme                    */ 164,
+		/* Brightness               */ 1388,
+		/* Language                 */ 1399,
+		/* ReadingMode              */ 1406,
+		/* LongWords                */ 1419,
+		/* Complexity               */ 1430,
+		/* Punctuation              */ 1441,
+		/* ResetPacing              */ 1453,
+		/* Night                    */ 1468,
+		/* Dark                     */ 1473,
+		/* Light                    */ 1480,
+		/* On                       */ 1486,
+		/* Off                      */ 1490,
+		/* FontSize                 */ 1494,
+		/* Typeface                 */ 1501,
+		/* PhantomWords             */ 1508,
+		/* RedHighlight             */ 1522,
+		/* Tracking                 */ 1535,
+		/* Anchor                   */ 1546,
+		/* GuideWidth               */ 1552,
+		/* GuideGap                 */ 1566,
+		/* Reset                    */ 1578,
+		/* Typography               */ 1364,
+		/* TapToExit                */ 1586,
+		/* TapToReset               */ 1601,
+		/* TapChangeSample          */ 1617,
+		/* TapExitSample            */ 1645,
+		/* TapToggleSample          */ 1673,
+		/* TapCycleSample           */ 1701,
+		/* CurrentBook              */ 1728,
+		/* Start                    */ 1741,
+		/* StartOfBook              */ 1747,
+		/* RestartBook              */ 1762,
+		/* AreYouSure               */ 1777,
+		/* NoKeepPlace              */ 1789,
+		/* YesRestart               */ 1801,
+		/* NoSamples                */ 1815,
+		/* Large                    */ 1829,
+		/* Medium                   */ 1835,
+		/* Small                    */ 1841,
+		/* Standard                 */ 608,
+		/* RsvpMode                 */ 617,
+		/* ScrollMode               */ 1847,
+		/* TimeEstimate             */ 1863,
+		/* TimeEstimateAccurate     */ 1877,
+		/* TimeEstimateFast         */ 1884,
+		/* Books                    */ 1891,
+		/* Articles                 */ 668,
+		/* Sync                     */ 677,
 	}},
 	// German (de)
 	{{
-		/* Resume                   */ 1812,
-		/* Chapters                 */ 1819,
-		/* Library                  */ 1827,
-		/* Settings                 */ 1838,
-		/* PowerOff                 */ 1847,
-		/* Back                     */ 1859,
-		/* Display                  */ 1866,
-		/* TypographyTune           */ 1874,
-		/* WordPacing               */ 1885,
-		/* Theme                    */ 1895,
-		/* Brightness               */ 1901,
-		/* Language                 */ 1912,
-		/* ReadingMode              */ 1920,
-		/* LongWords                */ 1930,
-		/* Complexity               */ 1943,
-		/* Punctuation              */ 1955,
-		/* ResetPacing              */ 1963,
-		/* Night                    */ 1976,
-		/* Dark                     */ 1982,
-		/* Light                    */ 1989,
-		/* On                       */ 1994,
-		/* Off                      */ 1998,
-		/* FontSize                 */ 2002,
-		/* Typeface                 */ 2014,
-		/* PhantomWords             */ 2025,
-		/* RedHighlight             */ 2039,
-		/* Tracking                 */ 2048,
-		/* Anchor                   */ 2058,
-		/* GuideWidth               */ 2064,
-		/* GuideGap                 */ 2076,
-		/* Reset                    */ 2087,
-		/* Typography               */ 1874,
-		/* TapToExit                */ 2100,
-		/* TapToReset               */ 2116,
-		/* TapChangeSample          */ 2133,
-		/* TapExitSample            */ 2159,
-		/* TapToggleSample          */ 2184,
-		/* TapCycleSample           */ 2211,
-		/* CurrentBook              */ 2238,
-		/* Start                    */ 470,
-		/* StartOfBook              */ 2253,
-		/* RestartBook              */ 2264,
-		/* AreYouSure               */ 2273,
-		/* NoKeepPlace              */ 2281,
-		/* YesRestart               */ 2294,
-		/* NoSamples                */ 2302,
-		/* Large                    */ 2315,
-		/* Medium                   */ 2321,
-		/* Small                    */ 2328,
-		/* Standard                 */ 575,
-		/* RsvpMode                 */ 584,
-		/* ScrollMode               */ 2334,
-		/* TimeEstimate             */ 2348,
-		/* TimeEstimateAccurate     */ 2357,
-		/* TimeEstimateFast         */ 2363,
+		/* Resume                   */ 1898,
+		/* Chapters                 */ 1905,
+		/* Library                  */ 1913,
+		/* Settings                 */ 1924,
+		/* PowerOff                 */ 1933,
+		/* Back                     */ 1945,
+		/* Display                  */ 1952,
+		/* TypographyTune           */ 1960,
+		/* WordPacing               */ 1971,
+		/* Theme                    */ 1981,
+		/* Brightness               */ 1987,
+		/* Language                 */ 1998,
+		/* ReadingMode              */ 2006,
+		/* LongWords                */ 2016,
+		/* Complexity               */ 2029,
+		/* Punctuation              */ 2041,
+		/* ResetPacing              */ 2049,
+		/* Night                    */ 2062,
+		/* Dark                     */ 2068,
+		/* Light                    */ 2075,
+		/* On                       */ 2080,
+		/* Off                      */ 2084,
+		/* FontSize                 */ 2088,
+		/* Typeface                 */ 2100,
+		/* PhantomWords             */ 2111,
+		/* RedHighlight             */ 2125,
+		/* Tracking                 */ 2134,
+		/* Anchor                   */ 2144,
+		/* GuideWidth               */ 2150,
+		/* GuideGap                 */ 2162,
+		/* Reset                    */ 2173,
+		/* Typography               */ 1960,
+		/* TapToExit                */ 2186,
+		/* TapToReset               */ 2202,
+		/* TapChangeSample          */ 2219,
+		/* TapExitSample            */ 2245,
+		/* TapToggleSample          */ 2270,
+		/* TapCycleSample           */ 2297,
+		/* CurrentBook              */ 2324,
+		/* Start                    */ 503,
+		/* StartOfBook              */ 2339,
+		/* RestartBook              */ 2350,
+		/* AreYouSure               */ 2359,
+		/* NoKeepPlace              */ 2367,
+		/* YesRestart               */ 2380,
+		/* NoSamples                */ 2388,
+		/* Large                    */ 2401,
+		/* Medium                   */ 2407,
+		/* Small                    */ 2414,
+		/* Standard                 */ 608,
+		/* RsvpMode                 */ 617,
+		/* ScrollMode               */ 2420,
+		/* TimeEstimate             */ 2434,
+		/* TimeEstimateAccurate     */ 2443,
+		/* TimeEstimateFast         */ 2449,
+		/* Books                    */ 2457,
+		/* Articles                 */ 2464,
+		/* Sync                     */ 677,
 	}},
 	// Romanian (ro)
 	{{
-		/* Resume                   */ 2371,
-		/* Chapters                 */ 2380,
-		/* Library                  */ 648,
-		/* Settings                 */ 2389,
-		/* PowerOff                 */ 2396,
-		/* Back                     */ 2403,
-		/* Display                  */ 2410,
-		/* TypographyTune           */ 2417,
-		/* WordPacing               */ 2428,
-		/* Theme                    */ 714,
-		/* Brightness               */ 2441,
-		/* Language                 */ 2450,
-		/* ReadingMode              */ 2456,
-		/* LongWords                */ 2467,
-		/* Complexity               */ 2481,
-		/* Punctuation              */ 2494,
-		/* ResetPacing              */ 2505,
-		/* Night                    */ 2516,
-		/* Dark                     */ 2523,
-		/* Light                    */ 2530,
-		/* On                       */ 2538,
-		/* Off                      */ 2545,
-		/* FontSize                 */ 2551,
-		/* Typeface                 */ 2558,
-		/* PhantomWords             */ 2563,
-		/* RedHighlight             */ 2579,
-		/* Tracking                 */ 2591,
-		/* Anchor                   */ 2600,
-		/* GuideWidth               */ 2607,
-		/* GuideGap                 */ 2619,
-		/* Reset                    */ 2631,
-		/* Typography               */ 2417,
-		/* TapToExit                */ 2640,
-		/* TapToReset               */ 2654,
-		/* TapChangeSample          */ 2667,
-		/* TapExitSample            */ 2693,
-		/* TapToggleSample          */ 2716,
-		/* TapCycleSample           */ 2741,
-		/* CurrentBook              */ 2765,
-		/* Start                    */ 2780,
-		/* StartOfBook              */ 2788,
-		/* RestartBook              */ 2805,
-		/* AreYouSure               */ 2823,
-		/* NoKeepPlace              */ 2830,
-		/* YesRestart               */ 2844,
-		/* NoSamples                */ 2859,
-		/* Large                    */ 2870,
-		/* Medium                   */ 2875,
-		/* Small                    */ 2881,
-		/* Standard                 */ 575,
-		/* RsvpMode                 */ 584,
-		/* ScrollMode               */ 2885,
-		/* TimeEstimate             */ 2901,
-		/* TimeEstimateAccurate     */ 2912,
-		/* TimeEstimateFast         */ 2918,
+		/* Resume                   */ 2472,
+		/* Chapters                 */ 2481,
+		/* Library                  */ 701,
+		/* Settings                 */ 2490,
+		/* PowerOff                 */ 2497,
+		/* Back                     */ 2504,
+		/* Display                  */ 2511,
+		/* TypographyTune           */ 2518,
+		/* WordPacing               */ 2529,
+		/* Theme                    */ 767,
+		/* Brightness               */ 2542,
+		/* Language                 */ 2551,
+		/* ReadingMode              */ 2557,
+		/* LongWords                */ 2568,
+		/* Complexity               */ 2582,
+		/* Punctuation              */ 2595,
+		/* ResetPacing              */ 2606,
+		/* Night                    */ 2617,
+		/* Dark                     */ 2624,
+		/* Light                    */ 2631,
+		/* On                       */ 2639,
+		/* Off                      */ 2646,
+		/* FontSize                 */ 2652,
+		/* Typeface                 */ 2659,
+		/* PhantomWords             */ 2664,
+		/* RedHighlight             */ 2680,
+		/* Tracking                 */ 2692,
+		/* Anchor                   */ 2701,
+		/* GuideWidth               */ 2708,
+		/* GuideGap                 */ 2720,
+		/* Reset                    */ 2732,
+		/* Typography               */ 2518,
+		/* TapToExit                */ 2741,
+		/* TapToReset               */ 2755,
+		/* TapChangeSample          */ 2768,
+		/* TapExitSample            */ 2794,
+		/* TapToggleSample          */ 2817,
+		/* TapCycleSample           */ 2842,
+		/* CurrentBook              */ 2866,
+		/* Start                    */ 2881,
+		/* StartOfBook              */ 2889,
+		/* RestartBook              */ 2906,
+		/* AreYouSure               */ 2924,
+		/* NoKeepPlace              */ 2931,
+		/* YesRestart               */ 2945,
+		/* NoSamples                */ 2960,
+		/* Large                    */ 2971,
+		/* Medium                   */ 2976,
+		/* Small                    */ 2982,
+		/* Standard                 */ 608,
+		/* RsvpMode                 */ 617,
+		/* ScrollMode               */ 2986,
+		/* TimeEstimate             */ 3002,
+		/* TimeEstimateAccurate     */ 3013,
+		/* TimeEstimateFast         */ 3019,
+		/* Books                    */ 3025,
+		/* Articles                 */ 3031,
+		/* Sync                     */ 677,
 	}},
 	// Polish (pl)
 	{{
-		/* Resume                   */ 2924,
-		/* Chapters                 */ 2930,
-		/* Library                  */ 2940,
-		/* Settings                 */ 2951,
-		/* PowerOff                 */ 2962,
-		/* Back                     */ 2969,
-		/* Display                  */ 2974,
-		/* TypographyTune           */ 2980,
-		/* WordPacing               */ 2991,
-		/* Theme                    */ 3002,
-		/* Brightness               */ 3008,
-		/* Language                 */ 3016,
-		/* ReadingMode              */ 3022,
-		/* LongWords                */ 3033,
-		/* Complexity               */ 3046,
-		/* Punctuation              */ 3056,
-		/* ResetPacing              */ 3067,
-		/* Night                    */ 3079,
-		/* Dark                     */ 3083,
-		/* Light                    */ 3090,
-		/* On                       */ 3096,
-		/* Off                      */ 3100,
-		/* FontSize                 */ 3104,
-		/* Typeface                 */ 3112,
-		/* PhantomWords             */ 3117,
-		/* RedHighlight             */ 3129,
-		/* Tracking                 */ 3138,
-		/* Anchor                   */ 3146,
-		/* GuideWidth               */ 3154,
-		/* GuideGap                 */ 3166,
-		/* Reset                    */ 326,
-		/* Typography               */ 2980,
-		/* TapToExit                */ 3180,
-		/* TapToReset               */ 3196,
-		/* TapChangeSample          */ 3210,
-		/* TapExitSample            */ 3236,
-		/* TapToggleSample          */ 3262,
-		/* TapCycleSample           */ 3289,
-		/* CurrentBook              */ 3314,
-		/* Start                    */ 470,
-		/* StartOfBook              */ 3330,
-		/* RestartBook              */ 3347,
-		/* AreYouSure               */ 3363,
-		/* NoKeepPlace              */ 3373,
-		/* YesRestart               */ 3385,
-		/* NoSamples                */ 3398,
-		/* Large                    */ 3410,
-		/* Medium                   */ 3415,
-		/* Small                    */ 3422,
-		/* Standard                 */ 575,
-		/* RsvpMode                 */ 584,
-		/* ScrollMode               */ 3427,
-		/* TimeEstimate             */ 3441,
-		/* TimeEstimateAccurate     */ 3456,
-		/* TimeEstimateFast         */ 3465,
+		/* Resume                   */ 3040,
+		/* Chapters                 */ 3046,
+		/* Library                  */ 3056,
+		/* Settings                 */ 3067,
+		/* PowerOff                 */ 3078,
+		/* Back                     */ 3085,
+		/* Display                  */ 3090,
+		/* TypographyTune           */ 3096,
+		/* WordPacing               */ 3107,
+		/* Theme                    */ 3118,
+		/* Brightness               */ 3124,
+		/* Language                 */ 3132,
+		/* ReadingMode              */ 3138,
+		/* LongWords                */ 3149,
+		/* Complexity               */ 3162,
+		/* Punctuation              */ 3172,
+		/* ResetPacing              */ 3183,
+		/* Night                    */ 3195,
+		/* Dark                     */ 3199,
+		/* Light                    */ 3206,
+		/* On                       */ 3212,
+		/* Off                      */ 3216,
+		/* FontSize                 */ 3220,
+		/* Typeface                 */ 3228,
+		/* PhantomWords             */ 3233,
+		/* RedHighlight             */ 3245,
+		/* Tracking                 */ 3254,
+		/* Anchor                   */ 3262,
+		/* GuideWidth               */ 3270,
+		/* GuideGap                 */ 3282,
+		/* Reset                    */ 359,
+		/* Typography               */ 3096,
+		/* TapToExit                */ 3296,
+		/* TapToReset               */ 3312,
+		/* TapChangeSample          */ 3326,
+		/* TapExitSample            */ 3352,
+		/* TapToggleSample          */ 3378,
+		/* TapCycleSample           */ 3405,
+		/* CurrentBook              */ 3430,
+		/* Start                    */ 503,
+		/* StartOfBook              */ 3446,
+		/* RestartBook              */ 3463,
+		/* AreYouSure               */ 3479,
+		/* NoKeepPlace              */ 3489,
+		/* YesRestart               */ 3501,
+		/* NoSamples                */ 3514,
+		/* Large                    */ 3526,
+		/* Medium                   */ 3531,
+		/* Small                    */ 3538,
+		/* Standard                 */ 608,
+		/* RsvpMode                 */ 617,
+		/* ScrollMode               */ 3543,
+		/* TimeEstimate             */ 3557,
+		/* TimeEstimateAccurate     */ 3572,
+		/* TimeEstimateFast         */ 3581,
+		/* Books                    */ 3588,
+		/* Articles                 */ 3596,
+		/* Sync                     */ 677,
+	}},
+	// Japanese (ja)
+	{{
+		/* Resume                   */ 3605,
+		/* Chapters                 */ 3618,
+		/* Library                  */ 3622,
+		/* Settings                 */ 3629,
+		/* PowerOff                 */ 3636,
+		/* Back                     */ 3649,
+		/* Display                  */ 3656,
+		/* TypographyTune           */ 3663,
+		/* WordPacing               */ 3676,
+		/* Theme                    */ 3689,
+		/* Brightness               */ 3699,
+		/* Language                 */ 3709,
+		/* ReadingMode              */ 3716,
+		/* LongWords                */ 3732,
+		/* Complexity               */ 3745,
+		/* Punctuation              */ 3755,
+		/* ResetPacing              */ 3765,
+		/* Night                    */ 3784,
+		/* Dark                     */ 3794,
+		/* Light                    */ 3804,
+		/* On                       */ 3814,
+		/* Off                      */ 3821,
+		/* FontSize                 */ 3828,
+		/* Typeface                 */ 3844,
+		/* PhantomWords             */ 3851,
+		/* RedHighlight             */ 3864,
+		/* Tracking                 */ 3877,
+		/* Anchor                   */ 3884,
+		/* GuideWidth               */ 3897,
+		/* GuideGap                 */ 3910,
+		/* Reset                    */ 3926,
+		/* Typography               */ 3939,
+		/* TapToExit                */ 3952,
+		/* TapToReset               */ 3971,
+		/* TapChangeSample          */ 3996,
+		/* TapExitSample            */ 4028,
+		/* TapToggleSample          */ 4060,
+		/* TapCycleSample           */ 4092,
+		/* CurrentBook              */ 4124,
+		/* Start                    */ 4137,
+		/* StartOfBook              */ 4144,
+		/* RestartBook              */ 4157,
+		/* AreYouSure               */ 4170,
+		/* NoKeepPlace              */ 4195,
+		/* YesRestart               */ 4217,
+		/* NoSamples                */ 4239,
+		/* Large                    */ 4252,
+		/* Medium                   */ 4256,
+		/* Small                    */ 4260,
+		/* Standard                 */ 4264,
+		/* RsvpMode                 */ 617,
+		/* ScrollMode               */ 4271,
+		/* TimeEstimate             */ 4287,
+		/* TimeEstimateAccurate     */ 4300,
+		/* TimeEstimateFast         */ 4307,
+		/* Books                    */ 4314,
+		/* Articles                 */ 4318,
+		/* Sync                     */ 4325,
+	}},
+	// Chinese (zh)
+	{{
+		/* Resume                   */ 4332,
+		/* Chapters                 */ 4339,
+		/* Library                  */ 4346,
+		/* Settings                 */ 4353,
+		/* PowerOff                 */ 4360,
+		/* Back                     */ 4367,
+		/* Display                  */ 4374,
+		/* TypographyTune           */ 4381,
+		/* WordPacing               */ 4394,
+		/* Theme                    */ 4401,
+		/* Brightness               */ 4408,
+		/* Language                 */ 4415,
+		/* ReadingMode              */ 4422,
+		/* LongWords                */ 4435,
+		/* Complexity               */ 4442,
+		/* Punctuation              */ 4452,
+		/* ResetPacing              */ 4459,
+		/* Night                    */ 4472,
+		/* Dark                     */ 4479,
+		/* Light                    */ 4486,
+		/* On                       */ 4493,
+		/* Off                      */ 4497,
+		/* FontSize                 */ 4501,
+		/* Typeface                 */ 4508,
+		/* PhantomWords             */ 4515,
+		/* RedHighlight             */ 4528,
+		/* Tracking                 */ 4541,
+		/* Anchor                   */ 4548,
+		/* GuideWidth               */ 4555,
+		/* GuideGap                 */ 4568,
+		/* Reset                    */ 4581,
+		/* Typography               */ 4588,
+		/* TapToExit                */ 4595,
+		/* TapToReset               */ 4608,
+		/* TapChangeSample          */ 4621,
+		/* TapExitSample            */ 4647,
+		/* TapToggleSample          */ 4673,
+		/* TapCycleSample           */ 4699,
+		/* CurrentBook              */ 4725,
+		/* Start                    */ 4738,
+		/* StartOfBook              */ 4745,
+		/* RestartBook              */ 4758,
+		/* AreYouSure               */ 4771,
+		/* NoKeepPlace              */ 4784,
+		/* YesRestart               */ 4803,
+		/* NoSamples                */ 4822,
+		/* Large                    */ 4252,
+		/* Medium                   */ 4256,
+		/* Small                    */ 4260,
+		/* Standard                 */ 4832,
+		/* RsvpMode                 */ 617,
+		/* ScrollMode               */ 4839,
+		/* TimeEstimate             */ 4846,
+		/* TimeEstimateAccurate     */ 4859,
+		/* TimeEstimateFast         */ 4866,
+		/* Books                    */ 4873,
+		/* Articles                 */ 4880,
+		/* Sync                     */ 4887,
+	}},
+	// Korean (ko)
+	{{
+		/* Resume                   */ 4894,
+		/* Chapters                 */ 4907,
+		/* Library                  */ 4914,
+		/* Settings                 */ 4921,
+		/* PowerOff                 */ 4928,
+		/* Back                     */ 4942,
+		/* Display                  */ 4949,
+		/* TypographyTune           */ 4956,
+		/* WordPacing               */ 4970,
+		/* Theme                    */ 4984,
+		/* Brightness               */ 4991,
+		/* Language                 */ 4998,
+		/* ReadingMode              */ 5005,
+		/* LongWords                */ 5019,
+		/* Complexity               */ 5030,
+		/* Punctuation              */ 5040,
+		/* ResetPacing              */ 5053,
+		/* Night                    */ 5070,
+		/* Dark                     */ 5077,
+		/* Light                    */ 5084,
+		/* On                       */ 5094,
+		/* Off                      */ 5101,
+		/* FontSize                 */ 5108,
+		/* Typeface                 */ 5122,
+		/* PhantomWords             */ 5129,
+		/* RedHighlight             */ 5143,
+		/* Tracking                 */ 5157,
+		/* Anchor                   */ 5164,
+		/* GuideWidth               */ 5174,
+		/* GuideGap                 */ 5188,
+		/* Reset                    */ 5205,
+		/* Typography               */ 5215,
+		/* TapToExit                */ 5234,
+		/* TapToReset               */ 5251,
+		/* TapChangeSample          */ 5271,
+		/* TapExitSample            */ 5296,
+		/* TapToggleSample          */ 5321,
+		/* TapCycleSample           */ 5346,
+		/* CurrentBook              */ 5371,
+		/* Start                    */ 5382,
+		/* StartOfBook              */ 5389,
+		/* RestartBook              */ 5400,
+		/* AreYouSure               */ 5413,
+		/* NoKeepPlace              */ 5430,
+		/* YesRestart               */ 5448,
+		/* NoSamples                */ 5466,
+		/* Large                    */ 5480,
+		/* Medium                   */ 5487,
+		/* Small                    */ 5494,
+		/* Standard                 */ 5501,
+		/* RsvpMode                 */ 617,
+		/* ScrollMode               */ 5508,
+		/* TimeEstimate             */ 5525,
+		/* TimeEstimateAccurate     */ 5539,
+		/* TimeEstimateFast         */ 5546,
+		/* Books                    */ 5553,
+		/* Articles                 */ 5560,
+		/* Sync                     */ 5567,
 	}},
 }};
 

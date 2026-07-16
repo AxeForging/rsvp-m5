@@ -56,13 +56,13 @@ constexpr int kTinyGlyphWidth = 5;
 constexpr int kTinyGlyphHeight = 7;
 constexpr int kTinyGlyphSpacing = 1;
 constexpr int kTinyScale = 2;
-constexpr int kMenuTextScale = 3;  // menu items read bigger than footer/status tiny text
 constexpr int kReaderChromeMarginX = Board::Config::READER_CHROME_MARGIN_X;
 constexpr int kReaderChromeMarginTop = Board::Config::READER_CHROME_MARGIN_TOP;
 constexpr int kReaderChromeMarginBottom = Board::Config::READER_CHROME_MARGIN_BOTTOM;
 constexpr int kReaderBatteryMarginX = Board::Config::READER_BATTERY_MARGIN_X;
 constexpr int kReaderBatteryMarginTop = Board::Config::READER_BATTERY_MARGIN_TOP;
-constexpr int kCompactMenuRowHeight = 30;
+constexpr int kCompactMenuRowHeight = 22;
+constexpr int kCjkMenuRowHeight = 28;  // CJK labels render at the fixed 24px font, so give the row room
 constexpr int kCompactMenuX = 28;
 constexpr int kLibraryRowHeight = 38;
 constexpr int kLibraryInsetX = 26;
@@ -2101,6 +2101,13 @@ void drawCjkSegment(const lgfx::IFont *font, const String &utf8, int x, int yTop
   M5.Display.drawString(utf8.c_str(), x, yTop);
 }
 
+// The font to render CJK with anywhere in the UI: the downloaded Noto VLW if present (all scripts,
+// crisp), else the bundled per-language efont (null on en -> M5GFX Font0 tofu).
+const lgfx::IFont *activeCjkFont() {
+  const lgfx::IFont *font = cjkVlwFont();
+  return font ? font : cjkFontForContext(String());
+}
+
 }  // namespace
 
 // Drop the "VLW absent" negative cache so the next CJK render re-stats the SD. Call after a font
@@ -2778,8 +2785,22 @@ void DisplayManager::renderMenu(const std::vector<String> &items, size_t selecte
   const int virtualWidth = kDisplayWidth;
   const int virtualHeight = kDisplayHeight;
   const size_t itemCount = items.size();
+
+  // Menu text is the compact bitmap size (matching the footer/battery). CJK labels can't render that
+  // small (the efont/VLW is a fixed 24px), so a menu that contains any CJK gets taller rows; a
+  // Latin-only menu keeps the tight rows that fit long labels.
+  bool hasCjk = false;
+  for (const String &item : items) {
+    if (isCjkText(item)) {
+      hasCjk = true;
+      break;
+    }
+  }
+  const int rowHeight = hasCjk ? kCjkMenuRowHeight : kCompactMenuRowHeight;
+  const int latinGlyphHeight = kTinyGlyphHeight * kTinyScale;
+
   const size_t visibleCount =
-      std::min(itemCount, static_cast<size_t>(std::max(1, virtualHeight / kCompactMenuRowHeight)));
+      std::min(itemCount, static_cast<size_t>(std::max(1, virtualHeight / rowHeight)));
   size_t firstVisible = 0;
   if (selectedIndex >= visibleCount / 2) {
     firstVisible = selectedIndex - visibleCount / 2;
@@ -2788,27 +2809,53 @@ void DisplayManager::renderMenu(const std::vector<String> &items, size_t selecte
     firstVisible = itemCount - visibleCount;
   }
 
-  const int rowHeight = kCompactMenuRowHeight;
   const int totalHeight = rowHeight * static_cast<int>(visibleCount);
   int y = std::max(0, (virtualHeight - totalHeight) / 2);
 
   clearVirtualBuffer(virtualWidth, virtualHeight);
+
+  // Localized (CJK) menu labels can't be drawn with the byte-indexed bitmap font; collect them and
+  // overlay with the Unicode font after the flush, same two-pass approach as the reader/scroll view.
+  struct CjkLabel {
+    String text;
+    int x;
+    int y;
+    uint16_t color;
+  };
+  std::vector<CjkLabel> cjkLabels;
+  const lgfx::IFont *cjkFont = activeCjkFont();
 
   for (size_t row = 0; row < visibleCount; ++row) {
     const size_t itemIndex = firstVisible + row;
     const bool selected = itemIndex == selectedIndex;
     const uint16_t color = selected ? focusColor() : dimColor();
     const int maxWidth = virtualWidth - kCompactMenuX - 16;
+    const bool cjk = isCjkText(items[itemIndex]);
+    const int glyphHeight = cjk ? kCjkBaseFontPx : latinGlyphHeight;
+    const int textTop = y + std::max(0, (rowHeight - glyphHeight) / 2);
     if (selected) {
-      fillVirtualRect(10, y + 3, 5, kTinyGlyphHeight * kMenuTextScale + 2, selectedBarColor());
+      fillVirtualRect(10, textTop, 5, glyphHeight + 2, selectedBarColor());
     }
-    drawTinyTextAt(fitTinyText(items[itemIndex], maxWidth, kMenuTextScale), kCompactMenuX, y + 4, color,
-                   kMenuTextScale);
+    if (cjk) {
+      cjkLabels.push_back({items[itemIndex], kCompactMenuX, textTop, color});
+    } else {
+      drawTinyTextAt(fitTinyText(items[itemIndex], maxWidth, kTinyScale), kCompactMenuX, textTop,
+                     color, kTinyScale);
+    }
     y += rowHeight;
   }
 
   drawBatteryBadge();
   flushScaledFrame(scale, virtualWidth, virtualHeight);
+
+  if (!cjkLabels.empty()) {
+    M5.Display.startWrite();
+    M5.Display.setTextDatum(m5gfx::textdatum_t::top_left);
+    for (const CjkLabel &label : cjkLabels) {
+      drawCjkSegment(cjkFont, label.text, label.x, label.y, label.color);
+    }
+    M5.Display.endWrite();
+  }
 }
 
 void DisplayManager::renderLibrary(const std::vector<LibraryItem> &items, size_t selectedIndex) {

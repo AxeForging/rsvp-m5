@@ -18,8 +18,19 @@
 #include "storage/index/IndexedBookStore.h"
 #include "sync/CompanionSyncManager.h"
 #include "timer/FocusTimer.h"
+#include "i18n/Language.h"
 #include "ui/Localization.h"
 #include "update/OtaUpdater.h"
+
+#if RSVP_LANG == RSVP_LANG_JA
+#define RSVP_DEFAULT_UI_LANGUAGE UiLanguage::Japanese
+#elif RSVP_LANG == RSVP_LANG_ZH
+#define RSVP_DEFAULT_UI_LANGUAGE UiLanguage::Chinese
+#elif RSVP_LANG == RSVP_LANG_KO
+#define RSVP_DEFAULT_UI_LANGUAGE UiLanguage::Korean
+#else
+#define RSVP_DEFAULT_UI_LANGUAGE UiLanguage::English
+#endif
 
 using TouchEvent = Input::Event;
 
@@ -591,7 +602,7 @@ private:
     PauseMode pauseMode_ = PauseMode::Instant;
     bool darkMode_ = true;
     bool nightMode_ = false;
-    UiLanguage uiLanguage_ = UiLanguage::English;
+    UiLanguage uiLanguage_ = RSVP_DEFAULT_UI_LANGUAGE;  // seeded from the flashed RSVP_LANG
     ReaderMode readerMode_ = ReaderMode::Rsvp;
     HandednessMode handednessMode_ = HandednessMode::Right;
     DisplayManager::TypographyConfig typographyConfig_;

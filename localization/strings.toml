@@ -1,9 +1,9 @@
 # RSVP M5 localization source.
 # Edit this file, then run localization/generate_localization.py.
-# Keep ascii_only=true until the firmware font/rendering path supports accented glyphs reliably.
+# ascii_only=false: the firmware renders CJK menu/status labels via the Unicode font path.
 schema_version = 1
 default_language = "English"
-ascii_only = true
+ascii_only = false
 language_order = [
 	"English",
 	"Spanish",
@@ -11,6 +11,9 @@ language_order = [
 	"German",
 	"Romanian",
 	"Polish",
+	"Japanese",
+	"Chinese",
+	"Korean",
 ]
 
 [languages.English]
@@ -37,7 +40,18 @@ name = "Romana"
 code = "pl"
 name = "Polski"
 
-# Main menu
+[languages.Japanese]
+code = "ja"
+name = "日本語"
+
+[languages.Chinese]
+code = "zh"
+name = "简体中文"
+
+[languages.Korean]
+code = "ko"
+name = "한국어"
+
 [[strings]]
 key = "Resume"
 context = "Main menu action to continue reading from the saved position."
@@ -47,6 +61,9 @@ French = "Reprendre"
 German = "Weiter"
 Romanian = "Continua"
 Polish = "Wznow"
+Japanese = "続きから"
+Chinese = "继续"
+Korean = "이어보기"
 
 [[strings]]
 key = "Chapters"
@@ -57,6 +74,9 @@ French = "Chapitres"
 German = "Kapitel"
 Romanian = "Capitole"
 Polish = "Rozdzialy"
+Japanese = "章"
+Chinese = "章节"
+Korean = "챕터"
 
 [[strings]]
 key = "Library"
@@ -67,6 +87,9 @@ French = "Bibliotheque"
 German = "Bibliothek"
 Romanian = "Biblioteca"
 Polish = "Biblioteka"
+Japanese = "本棚"
+Chinese = "书库"
+Korean = "서재"
 
 [[strings]]
 key = "Settings"
@@ -77,6 +100,9 @@ French = "Reglages"
 German = "Optionen"
 Romanian = "Setari"
 Polish = "Ustawienia"
+Japanese = "設定"
+Chinese = "设置"
+Korean = "설정"
 
 [[strings]]
 key = "PowerOff"
@@ -87,9 +113,10 @@ French = "Eteindre"
 German = "Ausschalten"
 Romanian = "Oprire"
 Polish = "Wylacz"
+Japanese = "電源オフ"
+Chinese = "关机"
+Korean = "전원 끄기"
 
-
-# Shared navigation and settings categories
 [[strings]]
 key = "Back"
 context = "Navigation action returning to the previous screen."
@@ -99,6 +126,9 @@ French = "Retour"
 German = "Zuruck"
 Romanian = "Inapoi"
 Polish = "Wroc"
+Japanese = "戻る"
+Chinese = "返回"
+Korean = "뒤로"
 
 [[strings]]
 key = "Display"
@@ -109,6 +139,9 @@ French = "Affichage"
 German = "Anzeige"
 Romanian = "Afisaj"
 Polish = "Ekran"
+Japanese = "表示"
+Chinese = "显示"
+Korean = "화면"
 
 [[strings]]
 key = "TypographyTune"
@@ -119,6 +152,9 @@ French = "Typographie"
 German = "Typografie"
 Romanian = "Tipografie"
 Polish = "Typografia"
+Japanese = "文字調整"
+Chinese = "字体调整"
+Korean = "서체 조정"
 
 [[strings]]
 key = "WordPacing"
@@ -129,9 +165,10 @@ French = "Rythme mots"
 German = "Lesetempo"
 Romanian = "Ritm cuvinte"
 Polish = "Tempo slow"
+Japanese = "速度調整"
+Chinese = "节奏"
+Korean = "속도 조절"
 
-
-# Display and reading settings
 [[strings]]
 key = "Theme"
 context = "Setting label for visual color theme selection."
@@ -141,6 +178,9 @@ French = "Theme"
 German = "Thema"
 Romanian = "Tema"
 Polish = "Motyw"
+Japanese = "テーマ"
+Chinese = "主题"
+Korean = "테마"
 
 [[strings]]
 key = "Brightness"
@@ -151,6 +191,9 @@ French = "Luminosite"
 German = "Helligkeit"
 Romanian = "Luminoz."
 Polish = "Jasnosc"
+Japanese = "明るさ"
+Chinese = "亮度"
+Korean = "밝기"
 
 [[strings]]
 key = "Language"
@@ -161,6 +204,9 @@ French = "Langue"
 German = "Sprache"
 Romanian = "Limba"
 Polish = "Jezyk"
+Japanese = "言語"
+Chinese = "语言"
+Korean = "언어"
 
 [[strings]]
 key = "ReadingMode"
@@ -171,9 +217,10 @@ French = "Mode lecture"
 German = "Lesemodus"
 Romanian = "Mod citire"
 Polish = "Tryb czyt."
+Japanese = "読書モード"
+Chinese = "阅读模式"
+Korean = "읽기 모드"
 
-
-# Word pacing settings
 [[strings]]
 key = "LongWords"
 context = "Word pacing setting that adjusts extra delay for long words."
@@ -183,6 +230,9 @@ French = "Mots longs"
 German = "Lange Worter"
 Romanian = "Cuvinte lungi"
 Polish = "Dlugie slowa"
+Japanese = "長い単語"
+Chinese = "长词"
+Korean = "긴 단어"
 
 [[strings]]
 key = "Complexity"
@@ -193,6 +243,9 @@ French = "Complexite"
 German = "Komplexitat"
 Romanian = "Complexitate"
 Polish = "Zlozonosc"
+Japanese = "複雑さ"
+Chinese = "复杂度"
+Korean = "복잡도"
 
 [[strings]]
 key = "Punctuation"
@@ -203,6 +256,9 @@ French = "Ponctuation"
 German = "Zeichen"
 Romanian = "Punctuatie"
 Polish = "Interpunk."
+Japanese = "句読点"
+Chinese = "标点"
+Korean = "문장부호"
 
 [[strings]]
 key = "ResetPacing"
@@ -213,9 +269,10 @@ French = "Reinit. rythme"
 German = "Tempo zuruck"
 Romanian = "Reset ritm"
 Polish = "Reset tempa"
+Japanese = "速度リセット"
+Chinese = "重置节奏"
+Korean = "속도 초기화"
 
-
-# Theme and toggle values
 [[strings]]
 key = "Night"
 context = "Theme option for the night reading theme."
@@ -225,6 +282,9 @@ French = "Nuit"
 German = "Nacht"
 Romanian = "Noapte"
 Polish = "Noc"
+Japanese = "ナイト"
+Chinese = "夜间"
+Korean = "야간"
 
 [[strings]]
 key = "Dark"
@@ -235,6 +295,9 @@ French = "Sombre"
 German = "Dunkel"
 Romanian = "Inchis"
 Polish = "Ciemny"
+Japanese = "ダーク"
+Chinese = "深色"
+Korean = "다크"
 
 [[strings]]
 key = "Light"
@@ -245,6 +308,9 @@ French = "Clair"
 German = "Hell"
 Romanian = "Deschis"
 Polish = "Jasny"
+Japanese = "ライト"
+Chinese = "浅色"
+Korean = "라이트"
 
 [[strings]]
 key = "On"
@@ -255,6 +321,9 @@ French = "Oui"
 German = "Ein"
 Romanian = "Pornit"
 Polish = "Tak"
+Japanese = "オン"
+Chinese = "开"
+Korean = "켜기"
 
 [[strings]]
 key = "Off"
@@ -265,9 +334,10 @@ French = "Non"
 German = "Aus"
 Romanian = "Oprit"
 Polish = "Nie"
+Japanese = "オフ"
+Chinese = "关"
+Korean = "끄기"
 
-
-# Typography settings
 [[strings]]
 key = "FontSize"
 context = "Typography setting label for rendered text size."
@@ -277,6 +347,9 @@ French = "Taille"
 German = "Schriftgrad"
 Romanian = "Marime"
 Polish = "Rozmiar"
+Japanese = "文字サイズ"
+Chinese = "字号"
+Korean = "글자 크기"
 
 [[strings]]
 key = "Typeface"
@@ -287,6 +360,9 @@ French = "Police"
 German = "Schriftart"
 Romanian = "Font"
 Polish = "Kroj"
+Japanese = "書体"
+Chinese = "字体"
+Korean = "서체"
 
 [[strings]]
 key = "PhantomWords"
@@ -297,6 +373,9 @@ French = "Mots fantomes"
 German = "Phantomworter"
 Romanian = "Cuvinte fantoma"
 Polish = "Slowa widma"
+Japanese = "前後の語"
+Chinese = "上下文词"
+Korean = "문맥 단어"
 
 [[strings]]
 key = "RedHighlight"
@@ -307,6 +386,9 @@ French = "Accent rouge"
 German = "Rotfokus"
 Romanian = "Accent rosu"
 Polish = "Czerwony"
+Japanese = "赤い強調"
+Chinese = "红色高亮"
+Korean = "빨강 강조"
 
 [[strings]]
 key = "Tracking"
@@ -317,6 +399,9 @@ French = "Espacement"
 German = "Laufweite"
 Romanian = "Spatiere"
 Polish = "Odstepy"
+Japanese = "字間"
+Chinese = "字距"
+Korean = "자간"
 
 [[strings]]
 key = "Anchor"
@@ -327,6 +412,9 @@ French = "Ancre"
 German = "Anker"
 Romanian = "Ancora"
 Polish = "Kotwica"
+Japanese = "基準位置"
+Chinese = "锚点"
+Korean = "기준점"
 
 [[strings]]
 key = "GuideWidth"
@@ -337,6 +425,9 @@ French = "Largeur guide"
 German = "Guidebreite"
 Romanian = "Latime ghid"
 Polish = "Szer. guide"
+Japanese = "ガイド幅"
+Chinese = "导引宽度"
+Korean = "가이드 폭"
 
 [[strings]]
 key = "GuideGap"
@@ -347,6 +438,9 @@ French = "Ecart guide"
 German = "Guidespalt"
 Romanian = "Spatiu ghid"
 Polish = "Przerwa guide"
+Japanese = "ガイド間隔"
+Chinese = "导引间距"
+Korean = "가이드 간격"
 
 [[strings]]
 key = "Reset"
@@ -357,6 +451,9 @@ French = "Reinit."
 German = "Zurucksetzen"
 Romanian = "Resetare"
 Polish = "Reset"
+Japanese = "リセット"
+Chinese = "重置"
+Korean = "초기화"
 
 [[strings]]
 key = "Typography"
@@ -367,9 +464,10 @@ French = "Typographie"
 German = "Typografie"
 Romanian = "Tipografie"
 Polish = "Typografia"
+Japanese = "文字設定"
+Chinese = "排版"
+Korean = "타이포그래피"
 
-
-# Sample screen hints
 [[strings]]
 key = "TapToExit"
 context = "Small hint shown when tapping exits the current preview/sample screen."
@@ -379,6 +477,9 @@ French = "toucher sortie"
 German = "tippen zum Ende"
 Romanian = "atinge iesire"
 Polish = "dotknij wyjscie"
+Japanese = "タップで戻る"
+Chinese = "点击退出"
+Korean = "탭하여 종료"
 
 [[strings]]
 key = "TapToReset"
@@ -389,6 +490,9 @@ French = "toucher reinit."
 German = "tippen zum Reset"
 Romanian = "atinge reset"
 Polish = "dotknij reset"
+Japanese = "タップでリセット"
+Chinese = "点击重置"
+Korean = "탭하여 초기화"
 
 [[strings]]
 key = "TapChangeSample"
@@ -399,6 +503,9 @@ French = "Touchez change  G/D echant."
 German = "Tippen aendern  L/R Probe"
 Romanian = "Atinge schimba  S/D proba"
 Polish = "Dotknij zmien  L/R probka"
+Japanese = "タップ変更 左右で例文"
+Chinese = "点击更改 左右换例"
+Korean = "탭 변경 좌우 예문"
 
 [[strings]]
 key = "TapExitSample"
@@ -409,6 +516,9 @@ French = "Touchez sortie  G/D echant."
 German = "Tippen zuruck  L/R Probe"
 Romanian = "Atinge iesi  S/D proba"
 Polish = "Dotknij wyjdz  L/R probka"
+Japanese = "タップ終了 左右で例文"
+Chinese = "点击退出 左右换例"
+Korean = "탭 종료 좌우 예문"
 
 [[strings]]
 key = "TapToggleSample"
@@ -419,6 +529,9 @@ French = "Touchez option  G/D echant."
 German = "Tippen schalten  L/R Probe"
 Romanian = "Atinge comuta  S/D proba"
 Polish = "Dotknij przel.  L/R probka"
+Japanese = "タップ切替 左右で例文"
+Chinese = "点击切换 左右换例"
+Korean = "탭 전환 좌우 예문"
 
 [[strings]]
 key = "TapCycleSample"
@@ -429,9 +542,10 @@ French = "Touchez cycle  G/D echant."
 German = "Tippen wechseln  L/R Probe"
 Romanian = "Atinge ciclu  S/D proba"
 Polish = "Dotknij cykl  L/R probka"
+Japanese = "タップ巡回 左右で例文"
+Chinese = "点击轮换 左右换例"
+Korean = "탭 순환 좌우 예문"
 
-
-# Book and restart flow
 [[strings]]
 key = "CurrentBook"
 context = "Label for the currently selected or currently open book."
@@ -441,6 +555,9 @@ French = "Livre actuel"
 German = "Aktuelles Buch"
 Romanian = "Cartea curenta"
 Polish = "Biezaca ksiazka"
+Japanese = "現在の本"
+Chinese = "当前书籍"
+Korean = "현재 책"
 
 [[strings]]
 key = "Start"
@@ -451,6 +568,9 @@ French = "Debut"
 German = "Start"
 Romanian = "Inceput"
 Polish = "Start"
+Japanese = "最初"
+Chinese = "开始"
+Korean = "처음"
 
 [[strings]]
 key = "StartOfBook"
@@ -461,6 +581,9 @@ French = "Debut du livre"
 German = "Buchanfang"
 Romanian = "Inceputul cartii"
 Polish = "Poczatek ksiazki"
+Japanese = "本の最初"
+Chinese = "书籍开头"
+Korean = "책 처음"
 
 [[strings]]
 key = "RestartBook"
@@ -471,6 +594,9 @@ French = "Relancer livre"
 German = "Buch neu"
 Romanian = "Reporneste cartea"
 Polish = "Restart ksiazki"
+Japanese = "最初から"
+Chinese = "重新开始"
+Korean = "처음부터"
 
 [[strings]]
 key = "AreYouSure"
@@ -481,6 +607,9 @@ French = "Confirmer ?"
 German = "Sicher?"
 Romanian = "Sigur?"
 Polish = "Na pewno?"
+Japanese = "よろしいですか？"
+Chinese = "确定吗？"
+Korean = "계속할까요?"
 
 [[strings]]
 key = "NoKeepPlace"
@@ -491,6 +620,9 @@ French = "Non, garder"
 German = "Nein, merken"
 Romanian = "Nu, pastreaza"
 Polish = "Nie, zostaw"
+Japanese = "いいえ、現在地"
+Chinese = "否，保留进度"
+Korean = "아니요, 유지"
 
 [[strings]]
 key = "YesRestart"
@@ -501,6 +633,9 @@ French = "Oui, relancer"
 German = "Ja, neu"
 Romanian = "Da, reporneste"
 Polish = "Tak, restart"
+Japanese = "はい、最初から"
+Chinese = "是，重新开始"
+Korean = "예, 처음부터"
 
 [[strings]]
 key = "NoSamples"
@@ -511,9 +646,10 @@ French = "Aucun exemple"
 German = "Keine Proben"
 Romanian = "Fara probe"
 Polish = "Brak probek"
+Japanese = "例文なし"
+Chinese = "无样本"
+Korean = "예문 없음"
 
-
-# Common option labels
 [[strings]]
 key = "Large"
 context = "Size option for typography or display settings."
@@ -523,6 +659,9 @@ French = "Grand"
 German = "Gross"
 Romanian = "Mare"
 Polish = "Duzy"
+Japanese = "大"
+Chinese = "大"
+Korean = "크게"
 
 [[strings]]
 key = "Medium"
@@ -533,6 +672,9 @@ French = "Moyen"
 German = "Mittel"
 Romanian = "Mediu"
 Polish = "Sredni"
+Japanese = "中"
+Chinese = "中"
+Korean = "보통"
 
 [[strings]]
 key = "Small"
@@ -543,6 +685,9 @@ French = "Petit"
 German = "Klein"
 Romanian = "Mic"
 Polish = "Maly"
+Japanese = "小"
+Chinese = "小"
+Korean = "작게"
 
 [[strings]]
 key = "Standard"
@@ -553,9 +698,10 @@ French = "Standard"
 German = "Standard"
 Romanian = "Standard"
 Polish = "Standard"
+Japanese = "標準"
+Chinese = "标准"
+Korean = "표준"
 
-
-# Reading mode and time estimate options
 [[strings]]
 key = "RsvpMode"
 context = "Reading mode option for rapid serial visual presentation."
@@ -565,6 +711,9 @@ French = "RSVP"
 German = "RSVP"
 Romanian = "RSVP"
 Polish = "RSVP"
+Japanese = "RSVP"
+Chinese = "RSVP"
+Korean = "RSVP"
 
 [[strings]]
 key = "ScrollMode"
@@ -575,6 +724,9 @@ French = "Defilement page"
 German = "Seiten-Scroll"
 Romanian = "Derulare pagina"
 Polish = "Scroll strony"
+Japanese = "ページ送り"
+Chinese = "翻页"
+Korean = "페이지 넘김"
 
 [[strings]]
 key = "TimeEstimate"
@@ -585,6 +737,9 @@ French = "Temps restant"
 German = "Restzeit"
 Romanian = "Timp ramas"
 Polish = "Pozostaly czas"
+Japanese = "残り時間"
+Chinese = "剩余时间"
+Korean = "남은 시간"
 
 [[strings]]
 key = "TimeEstimateAccurate"
@@ -595,6 +750,9 @@ French = "Precis"
 German = "Genau"
 Romanian = "Exact"
 Polish = "Dokladny"
+Japanese = "正確"
+Chinese = "精确"
+Korean = "정확"
 
 [[strings]]
 key = "TimeEstimateFast"
@@ -605,3 +763,45 @@ French = "Rapide"
 German = "Schnell"
 Romanian = "Rapid"
 Polish = "Szybki"
+Japanese = "高速"
+Chinese = "快速"
+Korean = "빠름"
+
+[[strings]]
+key = "Books"
+context = "Main menu item that opens the book list."
+English = "Books"
+Spanish = "Libros"
+French = "Livres"
+German = "Bucher"
+Romanian = "Carti"
+Polish = "Ksiazki"
+Japanese = "本"
+Chinese = "书籍"
+Korean = "도서"
+
+[[strings]]
+key = "Articles"
+context = "Main menu item that opens the saved articles list."
+English = "Articles"
+Spanish = "Articulos"
+French = "Articles"
+German = "Artikel"
+Romanian = "Articole"
+Polish = "Artykuly"
+Japanese = "記事"
+Chinese = "文章"
+Korean = "기사"
+
+[[strings]]
+key = "Sync"
+context = "Main menu item that opens the Wi-Fi companion sync."
+English = "Sync"
+Spanish = "Sincron."
+French = "Sync"
+German = "Sync"
+Romanian = "Sync"
+Polish = "Sync"
+Japanese = "同期"
+Chinese = "同步"
+Korean = "동기화"

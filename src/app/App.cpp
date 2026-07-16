@@ -5605,11 +5605,11 @@ void App::renderMainMenu() {
                                                           : static_cast<size_t>(MenuItemCount));
     items.push_back(uiText(UiText::Resume));
     items.push_back(uiText(UiText::Chapters));
-    items.push_back("Books");
-    items.push_back("Articles");
+    items.push_back(uiText(UiText::Books));
+    items.push_back(uiText(UiText::Articles));
     if (Board::Config::ENABLE_RESTRUCTURED_MENU) {
         items.push_back(uiText(UiText::Settings));
-        items.push_back("Sync");
+        items.push_back(uiText(UiText::Sync));
         items.push_back(uiText(UiText::PowerOff));
         display_.renderMenu(items, menuSelectedIndex_);
         return;
