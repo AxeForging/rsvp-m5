@@ -1,6 +1,6 @@
 {
   "name": "RSVP M5 (Simplified Chinese / \u7b80\u4f53\u4e2d\u6587)",
-  "version": "v0.0.7",
+  "version": "v0.0.8",
   "new_install_prompt_erase": true,
   "new_install_improv_wait_time": 0,
   "features": [
