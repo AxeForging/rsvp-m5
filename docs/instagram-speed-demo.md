@@ -75,7 +75,7 @@ The device remembers your place across books, even after sleep, sync, and testin
 
 Articles can arrive from RSS feeds, pasted drafts, or the companion sync page.
 
-WiFi setup, updates, USB transfer, and folder repair keep the daily workflow practical.
+WiFi setup, updates, Wi-Fi Sync, and folder repair keep the daily workflow practical.
 
 The reader is designed for experiments, commutes, study breaks, maker tables, and small pockets.
 

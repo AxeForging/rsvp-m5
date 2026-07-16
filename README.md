@@ -24,7 +24,7 @@ RSVP M5 targets a single board:
 
 ## Quick Start
 
-1. Flash the firmware from the browser.
+1. Flash the firmware from the browser — pick your reading language in the installer.
 2. Format the SD card and create the library folders.
 3. Convert books or articles to `.rsvp`.
 4. Copy or upload files to the device.
@@ -38,7 +38,9 @@ Use the hosted flasher:
 
 Open it in Chrome or Edge on desktop, connect the Core2 over USB, and follow the installer prompts. The flasher uses ESP Web Tools and Web Serial, so it must run from HTTPS or localhost.
 
-The flasher installs the latest published GitHub Release for the M5Stack Core2.
+The flasher installs the latest published GitHub Release for the M5Stack Core2. Choose your reading
+language (English, Japanese, Chinese, or Korean) from the dropdown before installing — `en` is the
+lightest build, and the full CJK font can be downloaded later over Wi-Fi. See [Languages](#languages).
 
 Make sure your USB cable is a data cable.
 
@@ -72,11 +74,14 @@ The device includes an `SD card check` tool under `Settings` to help diagnose ca
 
 ## Convert Books And Articles
 
-The recommended conversion workflow is still the browser converter on the hosted flasher page:
+The recommended conversion workflow is the browser **Library Workspace** on the hosted flasher page:
 
 <https://axeforging.github.io/rsvp-m5/>
 
-Use the converter to turn supported files into `.rsvp`, then upload or copy the `.rsvp` files to the device.
+Everything runs locally in your browser — nothing is uploaded to a server. Turn supported files into
+`.rsvp`, preview a book before you commit, see word counts and reading-time estimates, rename titles,
+then sync straight to the SD card's `/books/books` folder or download the `.rsvp` files. A local
+computer-side converter also lives in `tools/sd_card_converter`.
 
 Supported converter inputs include:
 
@@ -85,7 +90,7 @@ Supported converter inputs include:
 - `.md` / `.markdown`
 - `.html` / `.htm` / `.xhtml`
 
-The firmware can still open `.txt` files and has an on-device EPUB fallback, but the browser converter is the best path for large books, cleaner formatting, and fewer surprises.
+The device itself reads `.txt` and `.rsvp` files directly. EPUB, HTML, and Markdown are converted to `.rsvp` in the browser Library Workspace (or with the local `tools/sd_card_converter`) before you copy or upload them — the device does not convert EPUB on its own.
 
 ## Add Files To The Device
 
@@ -100,7 +105,7 @@ Use this layout:
 /books/articles/my-article.rsvp
 ```
 
-On first open, the firmware may create `.ridx` and `.rdat` sidecar files next to a book. These are the SD-backed word index and normalized word data used for long books. Leave them on the card; they are rebuilt automatically if the source book changes.
+On first open, the firmware may create `.ridx`, `.rdat`, and `.rpos` sidecar files next to a book. These are the SD-backed word index, normalized word data, and saved reading position. Leave them on the card; the index files are rebuilt automatically if the source book changes.
 
 Large books now load through the same indexed reading path as smaller books, with progress messages while indexes and time estimates are prepared. If a book cannot be prepared, the device should return to the menu with a readable reason instead of silently failing.
 
@@ -159,6 +164,13 @@ By default the updater follows the latest release; advanced `/config/ota.conf` s
 
 The current UI is built around edge gestures, a small top-level menu, and quick settings. On paused
 reader screens, subtle handles at the top and bottom edges hint that those menus are available.
+
+### Reading Modes
+
+RSVP M5 has two reading modes, switched under `Settings -> Word pacing -> Reading mode`:
+
+- **RSVP:** words flash one at a time in place, with the focus (ORP) letter highlighted.
+- **Scroll:** a clean, full-page scrolling view of the text.
 
 ### Hardware Buttons
 
@@ -241,12 +253,11 @@ Settings are grouped by how people actually use the device.
 - Brightness.
 - Left/right handed layout.
 - Reader controls layout, including an option to put rewind in the top-right corner.
-- Language.
+- Language (switches the localized UI; see [Languages](#languages)).
 - Screen saver: Life, Maze, Voronoi, or Screen off.
 - Standby timer.
 - Footer and battery label behavior.
 - Optional battery, chapter, and book percentage labels while actively reading.
-- Menu repeat speed.
 
 `Typography` includes:
 
@@ -276,12 +287,6 @@ Settings are grouped by how people actually use the device.
 - Auto OTA.
 - OTA owner/source.
 - OTA release tag.
-
-`Battery` includes:
-
-- CPU speed for RSVP, scroll, paused, menu, and standby states.
-- Auto-dim delay.
-- Auto-dim brightness level.
 
 `Firmware update` checks GitHub Releases and installs newer firmware when available. `SD card
 check` also lives under Settings.
@@ -329,11 +334,17 @@ mounts, whether it can write, and whether the expected library folders exist.
 
 If the old folder layout needs repair, the device now asks before changing the card.
 
-## Character Support
+## Languages
 
-`v0.0.8` includes the long-book and unsupported-character improvements from earlier releases. Common punctuation is normalized, ellipses and hyphenated sentence breaks are handled more carefully, and many accented Latin characters render directly or fall back to readable plain Latin equivalents.
+RSVP M5 reads and displays multiple languages, including **Japanese, Chinese, and Korean** alongside English and other European Latin-script languages.
 
-The current renderer is best for English and European Latin-script languages. Complex scripts still need additional font and shaping work.
+**Pick your language when you flash.** The flasher offers per-language firmware (`en`, `ja`, `zh`, `ko`). Each build bundles only its own reading font, so `en` is the lightest. The chosen language becomes the device default, and the on-screen menus and settings are localized to match.
+
+**Switch on the device, no reflash.** `Settings -> Display -> Language` changes the UI language at any time. The `Language` setting itself always stays in English, so you can always find your way back even from a script you cannot read.
+
+**On-demand CJK font.** Any build can render the full CJK range by downloading the complete Noto CJK font over Wi-Fi (saved to the SD card as `/fonts/cjk.vlw`). If you switch to a script this build did not bundle, the device blacks the screen and offers to download it; you can also fetch it from `Settings -> Firmware update`.
+
+Common punctuation is normalized, and accented Latin characters render directly or fall back to readable plain-Latin equivalents.
 
 ## Build From Source
 
@@ -352,12 +363,14 @@ pio run -e m5stack_core2
 
 Firmware environments:
 
-- `m5stack_core2`: M5Stack Core2 v1.1 firmware. This is the default env.
+- `m5stack_core2`: M5Stack Core2 v1.1 firmware. This is the default env, and a plain `pio run` builds
+  the English (`en`) variant. Build another language with `-DRSVP_LANG=RSVP_LANG_JA` (or
+  `RSVP_LANG_ZH` / `RSVP_LANG_KO`), or use `tools/export_web_firmware.py` to build every variant at once.
 - `native_test`: host-side unit tests. Run them with `pio test -e native_test`.
 
-Board-independent app code uses the stable `src/board` API and `src/input/Input.*`. Board-specific
-wiring, rails, buses, and chip choices live under `src/platforms/<board>`, while reusable chip code
-lives under `src/drivers`.
+Board-independent app code uses the stable `src/board` API and `src/input/Input.*`. The Core2 display,
+power, and touch are driven through the M5Unified library, with the board wiring under
+`src/platforms/m5stack_core2`.
 
 Upload to a connected device:
 
@@ -375,44 +388,44 @@ The hosted flasher page in `web/` is static. Its in-browser book converter
 (`web/generated/converter/`) is a prebuilt JavaScript bundle committed to the repo, so the page
 needs no build step.
 
-To export browser-flasher and OTA firmware assets for a release:
+To export browser-flasher and OTA firmware assets, run the exporter. It builds every language variant;
+`--version` defaults to the current git version:
 
 ```bash
-python3 tools/export_web_firmware.py --version v0.0.8
+python3 tools/export_web_firmware.py
 ```
 
-That writes:
+That writes, for each language `<lang>` in `en`, `ja`, `zh`, `ko`:
 
 ```text
-web/firmware/rsvp-m5-core2.bin
-web/firmware/rsvp-m5-core2-ota.bin
-web/firmware/manifest.json
+web/firmware/rsvp-m5-core2-<lang>.bin       # full browser-flasher image (chip family ESP32)
+web/firmware/rsvp-m5-core2-<lang>-ota.bin   # OTA update image
+web/firmware/manifest-<lang>.json           # ESP Web Tools manifest
+web/firmware/languages.json                 # language list the flasher dropdown reads
 ```
 
-`rsvp-m5-core2.bin` is the full flash image, `rsvp-m5-core2-ota.bin` is the OTA update image, and
-`manifest.json` is the single ESP Web Tools manifest for the Core2 (chip family ESP32).
+The full multi-script Noto CJK font (`rsvp-m5-cjk.vlw`) is built separately with
+`tools/make_cjk_vlw.py` and published as a release asset for on-demand download.
 
 ## Project Status
 
 RSVP M5 targets the M5Stack Core2 exclusively, and development tracks that single build.
 
-The most recent reader work focuses on touch ergonomics and more resilient RSS downloads:
+Recent work has focused on multi-language reading and a browser-first library workflow:
 
-- Restricts top and bottom edge menu swipe areas toward the middle of the display so WPM changes are
-  less likely to open menus by mistake.
-- Adds right-swipe Back navigation throughout menus, including text entry.
-- Adds a Reader controls setting that can put rewind in the top-right corner for one-handed use,
-  while moving the battery label to the top-left.
-- Exposes the Reader controls setting on device and in the device-hosted web companion.
-- Raises RSS feed and article size limits for longer full-text feeds.
-- Accepts usable partial RSS or Atom downloads when complete items arrive before a slow feed times
-  out.
+- CJK reading (Japanese, Chinese, Korean) with per-language firmware chosen at flash time and an
+  on-demand Noto CJK font download.
+- A localized on-device UI (menus and settings) across the supported languages.
+- A scroll reading mode alongside the classic RSVP view, with a cleaner full-page reading screen.
+- Snappier touch input and swipe-based menu navigation.
+- A richer browser Library Workspace: convert EPUB/TXT/MD/HTML to `.rsvp`, preview a book before
+  syncing, see word counts and reading-time estimates, rename titles, and sync straight to the SD card.
 
 The next areas of work are:
 
 - More capable article extraction for sites that do not expose full RSS content.
 - A fuller browser-hosted companion experience for desktop and mobile.
-- More font and script support.
+- Broader script and font coverage.
 
 ## Acknowledgements
 
