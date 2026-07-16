@@ -48,6 +48,12 @@ class OtaUpdater {
   Result checkAndInstall(const Config &config, StatusCallback callback = nullptr,
                          void *context = nullptr) const;
 
+  // Download a release asset (by name) to a file on the SD card, streaming (for large assets like
+  // the CJK font). Reuses the Wi-Fi + release-lookup + redirect-resolve path. Result.code is
+  // Success on completion; the file is removed on a partial download.
+  Result downloadAssetToSd(const Config &config, const String &assetName, const char *sdPath,
+                           StatusCallback callback = nullptr, void *context = nullptr) const;
+
  private:
   struct LatestRelease {
     String tagName;

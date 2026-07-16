@@ -95,6 +95,14 @@ jobs:
       - name: Export firmware assets
         run: python3 tools/export_web_firmware.py --version "${{ steps.release.outputs.tag }}"
 
+      - name: Generate CJK font asset
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+          pip install pillow fonttools
+          python3 tools/make_cjk_vlw.py --out rsvp-m5-cjk.vlw --size 30 --coverage full
+          ls -la rsvp-m5-cjk.vlw
+
       - name: Write release notes
         env:
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
@@ -122,11 +130,13 @@ jobs:
             gh release upload "$RELEASE_TAG" \
               web/firmware/rsvp-m5-core2.bin \
               web/firmware/rsvp-m5-core2-ota.bin \
+              rsvp-m5-cjk.vlw \
               --clobber
           else
             gh release create "$RELEASE_TAG" \
               web/firmware/rsvp-m5-core2.bin \
               web/firmware/rsvp-m5-core2-ota.bin \
+              rsvp-m5-cjk.vlw \
               --title "$RELEASE_TAG" \
               --notes-file release-notes.md \
               --target "$BUILD_SHA"

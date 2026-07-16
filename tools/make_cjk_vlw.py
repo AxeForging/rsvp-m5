@@ -14,14 +14,33 @@ Format (big-endian), reversed from lgfx VLWfont::loadFont:
 Usage: make_cjk_vlw.py --out cjk.vlw --size 30 [--coverage full|common]
 """
 import argparse
+import glob
 import struct
 import sys
 
 from PIL import ImageFont
 from fontTools.ttLib import TTCollection
 
-NOTO_TTC = "/usr/share/fonts/google-noto-sans-cjk-vf-fonts/NotoSansCJK-VF.ttc"
+# Search common locations across distros/CI (Fedora, Debian/Ubuntu fonts-noto-cjk).
+NOTO_CANDIDATES = [
+    "/usr/share/fonts/google-noto-sans-cjk-vf-fonts/NotoSansCJK-VF.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-VF.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+]
 FACE_INDEX = 0  # Noto Sans CJK JP -- one face covers Han (all), kana, Hangul, Latin
+
+
+def find_noto(explicit):
+    if explicit:
+        return explicit
+    for path in NOTO_CANDIDATES:
+        if glob.glob(path):
+            return path
+    matches = glob.glob("/usr/share/fonts/**/NotoSansCJK*.ttc", recursive=True)
+    if matches:
+        return sorted(matches)[0]
+    sys.exit("Noto Sans CJK not found; install fonts-noto-cjk or pass --font PATH")
 
 # (start, end) inclusive BMP ranges. VLW unicodes are 16-bit, so BMP only (covers all common CJK).
 RANGES_BASE = [
@@ -60,10 +79,13 @@ def main():
     ap.add_argument("--size", type=int, default=30, help="pixel size")
     ap.add_argument("--coverage", choices=["full", "common"], default="full")
     ap.add_argument("--weight", type=float, default=500.0, help="variable-font weight axis")
+    ap.add_argument("--font", default="", help="path to NotoSansCJK ttc (else auto-detected)")
     args = ap.parse_args()
 
-    cmap = TTCollection(NOTO_TTC).fonts[FACE_INDEX].getBestCmap()
-    font = ImageFont.truetype(NOTO_TTC, args.size, index=FACE_INDEX)
+    noto = find_noto(args.font)
+    print(f"[vlw] font: {noto}")
+    cmap = TTCollection(noto).fonts[FACE_INDEX].getBestCmap()
+    font = ImageFont.truetype(noto, args.size, index=FACE_INDEX)
     try:
         font.set_variation_by_axes([args.weight])
     except Exception as exc:  # noqa: BLE001

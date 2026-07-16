@@ -4306,6 +4306,19 @@ void App::runFirmwareUpdate(const OtaUpdater::Config& config, bool automatic, ui
                   result.currentVersion.c_str(), result.latestVersion.c_str(), result.summary.c_str(),
                   result.detail.c_str());
 
+    // First-run only: pull the ~34 MB Noto CJK font to the SD so Japanese/Chinese/Korean render with
+    // the complete font instead of the limited bundled fallback. Manual Update only; skipped once the
+    // font is present, and downloaded before any firmware reboot so it survives the restart.
+    if (!automatic && !Board::Storage::filesystem().exists("/fonts/cjk.vlw")) {
+        const OtaUpdater::Result fontResult = otaUpdater_.downloadAssetToSd(
+            config, "rsvp-m5-cjk.vlw", "/fonts/cjk.vlw", &App::handleStorageStatus, this);
+        Serial.printf("[cjk-font] code=%u summary=%s detail=%s\n",
+                      static_cast<unsigned int>(fontResult.code), fontResult.summary.c_str(),
+                      fontResult.detail.c_str());
+        display_.renderStatus("CJK Font", fontResult.summary, fontResult.detail);
+        delay(1500);
+    }
+
     if (result.rebootRequired) {
         display_.renderStatus("OTA", "Restarting", result.latestVersion);
         delay(300);

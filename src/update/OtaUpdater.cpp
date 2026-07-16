@@ -4,6 +4,7 @@
 
 #include <HTTPClient.h>
 #include <HTTPUpdate.h>
+#include <SD.h>
 #include "board/BoardStorage.h"
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -378,6 +379,138 @@ void OtaUpdater::reportStatus(StatusCallback callback, void *context, const char
   }
 
   callback(context, title, line1.c_str(), line2.c_str(), progressPercent);
+}
+
+OtaUpdater::Result OtaUpdater::downloadAssetToSd(const Config &config, const String &assetName,
+                                                 const char *sdPath, StatusCallback callback,
+                                                 void *context) const {
+  Result result;
+  result.currentVersion = currentVersion();
+
+  if (!isConfigured(config)) {
+    result.code = ResultCode::NotConfigured;
+    result.summary = "Wi-Fi not set";
+    result.detail = "Settings -> Wi-Fi";
+    return result;
+  }
+  if (!connectWiFi(config, callback, context)) {
+    disconnectWiFi();
+    result.code = ResultCode::ConnectFailed;
+    result.summary = "Wi-Fi failed";
+    result.detail = "Check credentials";
+    return result;
+  }
+
+  Config assetConfig = config;
+  assetConfig.assetName = assetName;
+  LatestRelease release;
+  String errorDetail;
+  if (!fetchRelease(assetConfig, release, errorDetail, callback, context)) {
+    disconnectWiFi();
+    result.code = ResultCode::MetadataFailed;
+    result.summary = "GitHub failed";
+    result.detail = errorDetail;
+    return result;
+  }
+  result.latestVersion = release.tagName;
+
+  String resolvedUrl;
+  if (!resolveDownloadUrl(release.assetUrl, release.tagName, resolvedUrl, errorDetail, callback,
+                          context)) {
+    disconnectWiFi();
+    result.code = ResultCode::AssetMissing;
+    result.summary = "Font unavailable";
+    result.detail = errorDetail;
+    return result;
+  }
+
+  WiFiClientSecure client;
+  client.setInsecure();
+  client.setHandshakeTimeout(15);
+  HTTPClient http;
+  http.setUserAgent(userAgentForVersion(release.tagName));
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  http.setTimeout(20000);
+  if (!http.begin(client, resolvedUrl)) {
+    disconnectWiFi();
+    result.code = ResultCode::InstallFailed;
+    result.summary = "Download failed";
+    result.detail = "connect";
+    return result;
+  }
+  const int statusCode = http.GET();
+  if (statusCode != HTTP_CODE_OK) {
+    http.end();
+    disconnectWiFi();
+    result.code = ResultCode::InstallFailed;
+    result.summary = "Download failed";
+    result.detail = httpClientErrorDetail("Font", statusCode);
+    return result;
+  }
+
+  const int totalBytes = http.getSize();
+  SD.mkdir("/fonts");
+  SD.remove(sdPath);  // clear any partial/old file first
+  File out = SD.open(sdPath, FILE_WRITE);
+  if (!out) {
+    http.end();
+    disconnectWiFi();
+    result.code = ResultCode::InstallFailed;
+    result.summary = "SD write failed";
+    result.detail = sdPath;
+    return result;
+  }
+
+  WiFiClient *stream = http.getStreamPtr();
+  uint8_t buffer[2048];
+  size_t written = 0;
+  int lastPercent = -1;
+  bool ioError = false;
+  while (stream != nullptr && (http.connected() || stream->available()) &&
+         (totalBytes <= 0 || written < static_cast<size_t>(totalBytes))) {
+    const size_t available = stream->available();
+    if (available == 0) {
+      delay(1);
+      continue;
+    }
+    const int readBytes =
+        stream->readBytes(buffer, std::min(available, sizeof(buffer)));
+    if (readBytes <= 0) {
+      break;
+    }
+    if (out.write(buffer, readBytes) != static_cast<size_t>(readBytes)) {
+      ioError = true;
+      break;
+    }
+    written += readBytes;
+    if (totalBytes > 0) {
+      const int percent = static_cast<int>((static_cast<uint64_t>(written) * 100) / totalBytes);
+      if (percent != lastPercent) {
+        lastPercent = percent;
+        reportStatus(callback, context, "CJK Font", "Downloading",
+                     String(written / (1024 * 1024)) + " / " + String(totalBytes / (1024 * 1024)) +
+                         " MB",
+                     percent);
+      }
+    }
+    yield();
+  }
+  out.close();
+  http.end();
+  disconnectWiFi();
+
+  if (ioError || (totalBytes > 0 && written < static_cast<size_t>(totalBytes))) {
+    SD.remove(sdPath);
+    result.code = ResultCode::InstallFailed;
+    result.summary = "Download incomplete";
+    result.detail = String(written / 1024) + " KB written";
+    return result;
+  }
+
+  result.code = ResultCode::Success;
+  result.summary = "Font ready";
+  result.detail = String(written / (1024 * 1024)) + " MB";
+  return result;
 }
 
 OtaUpdater::Result OtaUpdater::checkOnly(const Config &config, StatusCallback callback,
