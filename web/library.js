@@ -13,6 +13,10 @@ const SUPPORTED_EXTENSIONS = new Set(rsvpSupportedExtensions());
 const extensionForName = rsvpExtensionForName;
 const stripExtension = rsvpStripExtension;
 
+// Reading-speed baseline for the workspace's time estimates and the default preview speed. It is a
+// display-only guide; the device reads at whatever WPM the user sets.
+const ESTIMATE_WPM = 300;
+
 const state = {
   items: [],
   directoryHandle: null,
@@ -22,6 +26,11 @@ const state = {
   dragDepth: 0,
   nextId: 1,
   jszipPromise: null,
+  previewTimer: null,
+  previewWords: [],
+  previewIndex: 0,
+  previewWpm: ESTIMATE_WPM,
+  previewPlaying: false,
 };
 
 const hasDocument = typeof document !== "undefined";
@@ -44,6 +53,9 @@ const elements = hasDocument
       summary: document.querySelector("#library-summary"),
       summaryHeader: document.querySelector("#workspace-summary-header"),
       syncButton: document.querySelector("#library-sync-button"),
+      modal: document.querySelector("#workspace-modal"),
+      modalBody: document.querySelector("#workspace-modal-body"),
+      modalClose: document.querySelector("#workspace-modal-close"),
     }
   : {};
 
@@ -124,10 +136,34 @@ function initialize() {
       return;
     }
 
+    if (action === "preview") {
+      openPreviewModal(item);
+      return;
+    }
+
+    if (action === "rename") {
+      openRenameModal(item);
+      return;
+    }
+
     if (action === "reconvert") {
       await reconvertSingleItem(item);
     }
   });
+
+  if (elements.modal) {
+    elements.modalClose.addEventListener("click", closeWorkspaceModal);
+    elements.modal.addEventListener("click", (event) => {
+      if (event.target === elements.modal) {
+        closeWorkspaceModal();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !elements.modal.hidden) {
+        closeWorkspaceModal();
+      }
+    });
+  }
 
   elements.dropzone.addEventListener("dragenter", (event) => {
     event.preventDefault();
@@ -185,7 +221,7 @@ function refreshUi() {
   elements.summary.textContent =
     readyItems.length === 0
       ? "0 converted books ready"
-      : `${readyItems.length} converted ${pluralize("book", readyItems.length)} ready, ${formatNumber(totalWords)} ${pluralize("word", totalWords)}`;
+      : `${readyItems.length} converted ${pluralize("book", readyItems.length)} ready, ${formatNumber(totalWords)} ${pluralize("word", totalWords)}, ~${estimateMinutes(totalWords)} min`;
 
   if (elements.summaryHeader) {
     elements.summaryHeader.textContent =
@@ -275,6 +311,7 @@ function renderLibrary() {
             <span class="pill">${escapeHtml(item.sourceExt.slice(1).toUpperCase())}</span>
             <span class="pill">${formatNumber(item.wordCount)} ${pluralize("word", item.wordCount)}</span>
             <span class="pill">${formatNumber(item.chapterCount)} ${pluralize("chapter", item.chapterCount)}</span>
+            ${item.wordCount > 0 ? `<span class="pill">~${estimateMinutes(item.wordCount)} min</span>` : ""}
             ${authorPill}
           </div>
           <p class="library-item-copy">${detailCopy}</p>
@@ -282,7 +319,9 @@ function renderLibrary() {
           <div class="library-item-actions">
             ${
               item.status === "ready"
-                ? `<button class="tool-button" type="button" data-action="download" data-item-id="${item.id}">Download</button>`
+                ? `<button class="tool-button" type="button" data-action="preview" data-item-id="${item.id}">Preview</button>
+                   <button class="tool-button" type="button" data-action="rename" data-item-id="${item.id}">Rename</button>
+                   <button class="tool-button" type="button" data-action="download" data-item-id="${item.id}">Download</button>`
                 : ""
             }
             <button class="tool-button" type="button" data-action="reconvert" data-item-id="${item.id}">
@@ -747,6 +786,226 @@ function duplicateOutputNamesFor(items) {
   return Array.from(counts.entries())
     .filter(([, count]) => count > 1)
     .map(([name]) => name);
+}
+
+function estimateMinutes(words) {
+  return Math.max(1, Math.round(Number(words || 0) / ESTIMATE_WPM));
+}
+
+function sanitizeFatName(name) {
+  return String(name)
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Replace the header @title line, or prepend one if the file lacks it. A function replacement avoids
+// "$" substitution when the title contains "$". Body lines beginning with "@" are "@@"-escaped, so a
+// bare "@title" only ever appears in the header block — the first match is always the real title.
+function setRsvpTitle(text, title) {
+  if (/^@title[ ].*$/m.test(text)) {
+    return text.replace(/^@title[ ].*$/m, () => "@title " + title);
+  }
+  return "@title " + title + "\n" + text;
+}
+
+// --- Preview / rename shared modal ---
+
+function orpIndex(len) {
+  if (len <= 1) return 0;
+  if (len <= 5) return 1;
+  if (len <= 9) return 2;
+  return 3;
+}
+
+function renderPreviewWord(word) {
+  const i = orpIndex(word.length);
+  return (
+    `<span class="pre">${escapeHtml(word.slice(0, i))}</span>` +
+    `<span class="orp">${escapeHtml(word[i] || "")}</span>` +
+    `<span class="post">${escapeHtml(word.slice(i + 1))}</span>`
+  );
+}
+
+// Body words only: drop directive/marker lines (single leading "@"), un-escape "@@" body lines.
+function extractPreviewWords(text) {
+  const words = [];
+  for (const rawLine of String(text).split("\n")) {
+    let line = rawLine;
+    if (line.startsWith("@@")) {
+      line = line.slice(1);
+    } else if (line.startsWith("@")) {
+      continue;
+    }
+    for (const word of line.trim().split(/\s+/)) {
+      if (word) words.push(word);
+    }
+  }
+  return words;
+}
+
+function openWorkspaceModal(html) {
+  if (!elements.modal) {
+    return;
+  }
+  elements.modalBody.innerHTML = html;
+  elements.modal.hidden = false;
+}
+
+function stopPreviewTimer() {
+  if (state.previewTimer !== null) {
+    clearInterval(state.previewTimer);
+    state.previewTimer = null;
+  }
+}
+
+function closeWorkspaceModal() {
+  stopPreviewTimer();
+  state.previewPlaying = false;
+  if (elements.modal) {
+    elements.modal.hidden = true;
+    elements.modalBody.innerHTML = "";
+  }
+}
+
+function openRenameModal(item) {
+  state.editingItemId = item.id;
+  openWorkspaceModal(`
+    <h2>Rename book</h2>
+    <p>Sets the on-device title and the <code>.rsvp</code> filename.</p>
+    <label class="workspace-field">Title
+      <input type="text" id="rename-input" value="${escapeHtml(item.title || "")}" autocomplete="off">
+    </label>
+    <p class="workspace-note">File: <code id="rename-filename"></code></p>
+    <div class="workspace-modal-actions">
+      <button class="tool-button tool-button-primary" type="button" id="rename-save">Save</button>
+      <button class="tool-button" type="button" id="rename-cancel">Cancel</button>
+    </div>
+  `);
+
+  const input = document.querySelector("#rename-input");
+  const filenameEl = document.querySelector("#rename-filename");
+  const updateFilenamePreview = () => {
+    const derived = sanitizeFatName(input.value);
+    filenameEl.textContent = derived ? `${derived}.rsvp` : item.outputName;
+  };
+  updateFilenamePreview();
+  input.addEventListener("input", updateFilenamePreview);
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      applyRename(item, input.value);
+    }
+  });
+  document.querySelector("#rename-save").addEventListener("click", () => applyRename(item, input.value));
+  document.querySelector("#rename-cancel").addEventListener("click", closeWorkspaceModal);
+  input.focus();
+  input.select();
+}
+
+function applyRename(item, rawTitle) {
+  const title = String(rawTitle).trim();
+  if (!title) {
+    closeWorkspaceModal();
+    return;
+  }
+  item.title = title;
+  item.outputText = setRsvpTitle(item.outputText, title);
+  const derived = sanitizeFatName(title);
+  if (derived) {
+    item.outputName = `${derived}.rsvp`;
+  }
+  refreshItemWarnings();
+  renderLibrary();
+  refreshUi();
+  closeWorkspaceModal();
+  setStatus("Book renamed", `Saved as ${item.outputName}.`, "success");
+}
+
+function openPreviewModal(item) {
+  const words = extractPreviewWords(item.outputText);
+  if (words.length === 0) {
+    setStatus("Nothing to preview", `${item.sourceName} has no readable text.`, "error");
+    return;
+  }
+  const opening = words.slice(0, 50).join(" ");
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  state.previewWords = words;
+  state.previewIndex = 0;
+  state.previewWpm = ESTIMATE_WPM;
+
+  openWorkspaceModal(`
+    <h2>${escapeHtml(item.title || stripExtension(item.sourceName))}</h2>
+    <div class="rsvp-screen preview-screen">
+      <span class="rsvp-guide"></span>
+      <div class="rsvp-word" id="preview-word">${renderPreviewWord(words[0])}</div>
+    </div>
+    <p class="rsvp-meta"><span id="preview-wpm">${ESTIMATE_WPM} wpm</span> &middot; ${formatNumber(words.length)} ${pluralize("word", words.length)}</p>
+    <div class="preview-controls">
+      <button class="tool-button tool-button-primary" type="button" id="preview-playpause">Pause</button>
+      <label class="preview-speed">Speed
+        <input type="range" id="preview-speed" min="150" max="600" step="10" value="${ESTIMATE_WPM}">
+      </label>
+    </div>
+    <p class="workspace-note preview-opening">${escapeHtml(opening)}${words.length > 50 ? "…" : ""}</p>
+  `);
+
+  document.querySelector("#preview-playpause").addEventListener("click", () => {
+    if (state.previewPlaying) {
+      pausePreview();
+    } else {
+      startPreview();
+    }
+  });
+
+  const speed = document.querySelector("#preview-speed");
+  speed.addEventListener("input", () => {
+    state.previewWpm = Number(speed.value) || ESTIMATE_WPM;
+    const wpmEl = document.querySelector("#preview-wpm");
+    if (wpmEl) {
+      wpmEl.textContent = `${state.previewWpm} wpm`;
+    }
+    if (state.previewPlaying) {
+      startPreview(); // restart the interval at the new rate
+    }
+  });
+
+  if (reduce) {
+    pausePreview();
+  } else {
+    startPreview();
+  }
+}
+
+function startPreview() {
+  stopPreviewTimer();
+  state.previewPlaying = true;
+  const playPause = document.querySelector("#preview-playpause");
+  if (playPause) {
+    playPause.textContent = "Pause";
+  }
+  const intervalMs = Math.max(60, Math.round(60000 / state.previewWpm));
+  state.previewTimer = setInterval(stepPreview, intervalMs);
+}
+
+function pausePreview() {
+  stopPreviewTimer();
+  state.previewPlaying = false;
+  const playPause = document.querySelector("#preview-playpause");
+  if (playPause) {
+    playPause.textContent = "Play";
+  }
+}
+
+function stepPreview() {
+  const words = state.previewWords;
+  const wordEl = document.querySelector("#preview-word");
+  if (words.length === 0 || !wordEl) {
+    stopPreviewTimer();
+    return;
+  }
+  state.previewIndex = (state.previewIndex + 1) % words.length;
+  wordEl.innerHTML = renderPreviewWord(words[state.previewIndex]);
 }
 
 function pluralize(noun, count) {
