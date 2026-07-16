@@ -66,22 +66,40 @@ const char kWebCompanionHtml[] PROGMEM = R"HTML(<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RSVP M5 Companion</title>
 <style>
-:root{color-scheme:dark;--bg:#05070a;--fg:#ffffff;--muted:#94a3b8;--line:#1a2233;--card:#0a0f1a;--surface2:#0d1117;--surface3:#161b22;--accent:#d3542f;--accentHover:#b8461f;--accentInk:#ffffff;--danger:#ff5f56;--accent2:#ff5f56;--soft:#0d1117;--radius:8px;--radiusLg:16px}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-header{position:sticky;top:0;z-index:2;background:var(--card);border-bottom:1px solid var(--line);padding:14px 16px 10px}
-.brand{display:flex;align-items:center;gap:10px;margin:0 0 12px}.brand svg{flex:0 0 auto}.brand-name{font-size:1.15rem;font-weight:700;letter-spacing:-.01em}.brand-tag{display:block;font-size:.75rem;color:var(--muted);font-weight:500}
-h1{font-size:1.15rem;margin:0 0 10px}.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-button,.button{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface3);color:var(--fg);padding:9px 11px;font:inherit;cursor:pointer}
-button:hover,.button:hover{border-color:var(--accent)}
-button.primary,.button.primary{background:var(--accent);border-color:var(--accent);color:var(--accentInk);font-weight:700}button.primary:hover{background:var(--accentHover)}button.danger{color:var(--danger)}
-.tabs button{white-space:nowrap;padding:8px 6px}.tabs button.active{background:var(--surface3);border-color:var(--accent);color:var(--fg);font-weight:600}
-main{max-width:980px;margin:0 auto;padding:16px}.page{display:none}.page.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radiusLg);padding:14px;margin-bottom:12px}
-h2{font-size:1.05rem;margin:0 0 10px}h3{font-size:.95rem;margin:0 0 8px}.muted{color:var(--muted)}.status{padding:10px 12px;border-radius:var(--radius);background:var(--surface2);border:1px solid var(--line);margin-bottom:12px}
-label{display:block;font-weight:600;margin:10px 0 5px}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface2);color:var(--fg);font:inherit;padding:9px}input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
+:root{color-scheme:dark;--bg:#070a10;--fg:#f4f6fb;--muted:#8b98ad;--line:#1b2434;--card:#0c111b;--surface2:#0e141f;--surface3:#161d2b;--accent:#d3542f;--accentHover:#e56c45;--accentDeep:#b8461f;--accentInk:#fff;--danger:#ff6b60;--ok:#3fb950;--radius:10px;--radiusLg:16px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);background:radial-gradient(130% 80% at 50% -12%,#111725 0,var(--bg) 58%);color:var(--fg);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+header{position:sticky;top:0;z-index:2;background:var(--card);background:color-mix(in srgb,var(--card) 86%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.headbar{max-width:980px;margin:0 auto;padding:12px 16px 0}
+.brand{display:flex;align-items:center;gap:11px;margin:0 0 8px}.brand svg{flex:0 0 auto}
+.brand-name{font-size:1.16rem;font-weight:800;letter-spacing:-.02em;line-height:1}
+.brand-tag{display:block;font-size:.67rem;color:var(--muted);font-weight:600;letter-spacing:.15em;text-transform:uppercase;margin-top:4px}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--muted);padding:10px 14px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button:hover{color:var(--fg)}.tabs button.active{color:var(--fg);border-bottom-color:var(--accent)}
+main{max-width:980px;margin:0 auto;padding:18px 16px}.page{display:none}.page.active{display:block}
+button,.button{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface3);color:var(--fg);padding:9px 13px;font:inherit;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s,transform .05s}
+button:hover,.button:hover{border-color:var(--accent)}button:active{transform:translateY(1px)}
+button.primary,.button.primary{background:var(--accent);border-color:var(--accent);color:var(--accentInk)}button.primary:hover{background:var(--accentHover);border-color:var(--accentHover)}
+button.danger{color:var(--danger);border-color:transparent;background:none;padding:9px 6px}button.danger:hover{color:#ff8a80;border-color:transparent}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radiusLg);padding:16px 18px;margin-bottom:14px}
+h2{font-size:1.02rem;font-weight:700;letter-spacing:-.01em;margin:0 0 12px;display:flex;align-items:center;gap:9px}
+h2::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--accent);flex:0 0 auto}
+h3{font-size:.95rem;margin:0 0 8px}.muted{color:var(--muted)}
+.status{display:inline-flex;align-items:center;gap:8px;padding:7px 14px 7px 11px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);margin-bottom:16px;font-size:.9rem;font-weight:600}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+.status.ok::before{background:var(--ok)}.status.err::before{background:var(--danger)}
+label{display:block;font-weight:600;font-size:.9rem;margin:12px 0 5px}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface2);color:var(--fg);font:inherit;padding:10px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+input[type=file]::file-selector-button{margin-right:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface3);color:var(--fg);font:inherit;font-weight:600;padding:6px 12px;cursor:pointer}
+input[type=file]::file-selector-button:hover{border-color:var(--accent)}
+input[type=range]{accent-color:var(--accent);padding:0}input[type=checkbox]{width:auto;accent-color:var(--accent)}
 textarea{min-height:180px;resize:vertical}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row button{flex:0 0 auto}
-.item{border-top:1px solid var(--line);padding:10px 0}.item:first-child{border-top:0}.item-title{font-weight:700}.item-meta{color:var(--muted);font-size:.9rem}
-ul{padding-left:20px}code{background:var(--surface3);border-radius:6px;padding:1px 5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.item{border-top:1px solid var(--line);padding:12px 0;display:flex;align-items:center;gap:12px}.item:first-child{border-top:0}
+.item-body{flex:1;min-width:0}.item-title{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.item-meta{color:var(--muted);font-size:.85rem;margin-top:2px}
+ul{padding-left:20px}ul li{margin:5px 0}code{background:var(--surface3);border-radius:6px;padding:1px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
 [hidden]{display:none!important}
 .wizard{position:fixed;inset:0;z-index:5;background:var(--bg);overflow:auto;padding:24px 16px;display:flex;align-items:flex-start;justify-content:center}
 .wizard .card{max-width:460px;width:100%;margin-top:24px}
@@ -113,8 +131,9 @@ ul{padding-left:20px}code{background:var(--surface3);border-radius:6px;padding:1
 </div>
 </div>
 <header>
+<div class="headbar">
 <div class="brand">
-<svg viewBox="0 0 32 32" width="26" height="26" role="img" aria-label="AxeForge"><path d="M16 5V25" stroke="#fff" stroke-width="3.4"/><path fill="#d3542f" d="M16 10 7 4a8.5 8.5 0 0 0 0 12z"/><path fill="#d3542f" d="M16 10 25 4a8.5 8.5 0 0 1 0 12z"/><rect x="14.3" y="26.5" width="3.4" height="3.4" fill="#d3542f"/></svg>
+<svg viewBox="0 0 32 32" width="28" height="28" role="img" aria-label="AxeForge"><path d="M16 5V25" stroke="#fff" stroke-width="3.4"/><path fill="#d3542f" d="M16 10 7 4a8.5 8.5 0 0 0 0 12z"/><path fill="#d3542f" d="M16 10 25 4a8.5 8.5 0 0 1 0 12z"/><rect x="14.3" y="26.5" width="3.4" height="3.4" fill="#d3542f"/></svg>
 <span><span class="brand-name">RSVP M5</span><span class="brand-tag">Companion &middot; AxeForge</span></span>
 </div>
 <nav class="tabs">
@@ -124,6 +143,7 @@ ul{padding-left:20px}code{background:var(--surface3);border-radius:6px;padding:1
 <button data-tab="rss">RSS</button>
 <button data-tab="help">Help</button>
 </nav>
+</div>
 </header>
 <main>
 <div id="status" class="status">Connecting to reader...</div>
@@ -222,14 +242,15 @@ ul{padding-left:20px}code{background:var(--surface3);border-radius:6px;padding:1
 </main>
 <script>
 const $=id=>document.getElementById(id);let settings=null;
-function status(msg){$('status').textContent=msg}
+function status(msg){var s=$('status');s.textContent=msg;var e=/problem|failed|error|choose a file/i.test(msg);var o=/connected|uploaded|deleted|saved|synced|reloaded/i.test(msg);s.className='status'+(e?' err':o?' ok':'')}
+function displayName(n){return String(n||'').replace(/^.*\//,'').replace(/\.(rsvp|txt|epub)$/i,'')}
 async function api(path,opts){const r=await fetch(path,opts);const t=await r.text();let j={};try{j=t?JSON.parse(t):{}}catch(e){throw new Error(t||'Bad response')}if(!r.ok||j.ok===false)throw new Error(j.error||r.statusText);return j}
 function bytes(n){return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB'}
 function safeName(s){return (s||'article').replace(/[^a-z0-9._ -]+/gi,'-').replace(/\s+/g,' ').trim().slice(0,72)||'article'}
 function escRsvp(s){return (s||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim()}
 function articleFile(){const title=$('articleTitle').value.trim()||'Untitled Article';const author=$('articleAuthor').value.trim();const body=escRsvp($('articleBody').value);let out='@rsvp 1\n@title '+title+'\n';if(author)out+='@author '+author+'\n';out+='@para\n'+body+'\n';return {name:safeName(title)+'.rsvp',blob:new Blob([out],{type:'text/plain'})}}
 function html(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function renderList(id,items){$(id).innerHTML=items.length?items.map(b=>`<div class="item"><div class="item-title">${html(b.title||b.name)}</div><div class="item-meta">${html([b.author,b.name,bytes(b.bytes),b.progressPercent!=null?b.progressPercent+'% read':null].filter(Boolean).join(' - '))}</div><p><button class="danger" data-delete="${html(encodeURIComponent(b.name))}">Delete</button></p></div>`).join(''):'<span class="muted">Nothing here yet.</span>';document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>delBook(decodeURIComponent(b.dataset.delete)))}
+function renderList(id,items){$(id).innerHTML=items.length?items.map(b=>`<div class="item"><div class="item-body"><div class="item-title">${html(b.title||displayName(b.name))}</div><div class="item-meta">${html([b.author,bytes(b.bytes),b.progressPercent!=null?b.progressPercent+'% read':null].filter(Boolean).join(' · '))}</div></div><button class="danger" data-delete="${html(encodeURIComponent(b.name))}">Delete</button></div>`).join(''):'<span class="muted">Nothing here yet.</span>';document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>delBook(decodeURIComponent(b.dataset.delete)))}
 async function refresh(){try{const info=await api('/api/info');$('infoBox').innerHTML=`${info.name}<br><span class="muted">${info.mode} - ${info.networkSsid||''}</span><br>Pairing code: <strong>${info.pairingCode}</strong>`;const data=await api('/api/books');renderList('booksList',data.books.filter(b=>b.category!=='article'&&!String(b.name).startsWith('articles/')));renderList('articlesList',data.books.filter(b=>b.category==='article'||String(b.name).startsWith('articles/')));status('Connected to RSVP M5.')}catch(e){status('Connection problem: '+e.message)}}
 async function delBook(name){if(!confirm('Delete '+name+'?'))return;try{await api('/api/books?name='+encodeURIComponent(name),{method:'DELETE'});await refresh();status('Deleted '+name)}catch(e){status('Delete failed: '+e.message)}}
 async function uploadBlob(blob,name,category){const fd=new FormData();fd.append('file',blob,name);await api('/api/books?name='+encodeURIComponent(name)+'&category='+encodeURIComponent(category),{method:'POST',body:fd})}
