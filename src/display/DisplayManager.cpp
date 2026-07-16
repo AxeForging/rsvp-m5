@@ -56,12 +56,13 @@ constexpr int kTinyGlyphWidth = 5;
 constexpr int kTinyGlyphHeight = 7;
 constexpr int kTinyGlyphSpacing = 1;
 constexpr int kTinyScale = 2;
+constexpr int kMenuTextScale = 3;  // menu items read bigger than footer/status tiny text
 constexpr int kReaderChromeMarginX = Board::Config::READER_CHROME_MARGIN_X;
 constexpr int kReaderChromeMarginTop = Board::Config::READER_CHROME_MARGIN_TOP;
 constexpr int kReaderChromeMarginBottom = Board::Config::READER_CHROME_MARGIN_BOTTOM;
 constexpr int kReaderBatteryMarginX = Board::Config::READER_BATTERY_MARGIN_X;
 constexpr int kReaderBatteryMarginTop = Board::Config::READER_BATTERY_MARGIN_TOP;
-constexpr int kCompactMenuRowHeight = 22;
+constexpr int kCompactMenuRowHeight = 30;
 constexpr int kCompactMenuX = 28;
 constexpr int kLibraryRowHeight = 38;
 constexpr int kLibraryInsetX = 26;
@@ -2537,6 +2538,19 @@ void DisplayManager::renderScrollView(const std::vector<ContextWord> &words, uin
              kScrollSerifDivisor);
   const int maxLineWidth = virtualWidth - (kScrollMarginX * 2);
 
+  // CJK words can't go through the byte-indexed serif path (it renders their UTF-8 bytes as Latin
+  // mojibake). Measure and draw them with the Unicode font instead -- the downloaded Noto VLW if
+  // present, else the bundled per-language efont (null on the en build -> M5GFX Font0 tofu, matching
+  // the one-word reader). Latin words keep the crisp serif path.
+  const lgfx::IFont *cjkFont = cjkVlwFont();
+  if (cjkFont == nullptr) {
+    cjkFont = cjkFontForContext(String());
+  }
+  auto wordPixelWidth = [&](const String &text) {
+    return isCjkText(text) ? cjkDisplayWidth(cjkFont, text)
+                           : measureSerifTextWidth(text, kScrollSerifDivisor);
+  };
+
   size_t currentLocalIndex = 0;
   if (currentWordIndex >= windowStartIndex && currentWordIndex < windowStartIndex + words.size()) {
     currentLocalIndex = currentWordIndex - windowStartIndex;
@@ -2568,7 +2582,7 @@ void DisplayManager::renderScrollView(const std::vector<ContextWord> &words, uin
         break;
       }
 
-      const int wordWidth = measureSerifTextWidth(words[index].text, kScrollSerifDivisor);
+      const int wordWidth = wordPixelWidth(words[index].text);
       const int gap = (index == line.start) ? 0 : kScrollSpaceWidth;
       if (index > line.start && lineWidth + gap + wordWidth > maxLineWidth) {
         break;
@@ -2649,6 +2663,16 @@ void DisplayManager::renderScrollView(const std::vector<ContextWord> &words, uin
   lastRenderKey_ = renderKey;
   clearVirtualBuffer(virtualWidth, virtualHeight);
 
+  // CJK glyphs draw straight onto the panel (M5.Display), not into virtualFrame_, so collect them
+  // here and overlay after the frame flush -- same two-pass approach as the one-word CJK reader.
+  struct CjkSegment {
+    String text;
+    int x;
+    int y;
+    uint16_t color;
+  };
+  std::vector<CjkSegment> cjkSegments;
+
   for (size_t lineIndex = 0; lineIndex < lines.size(); ++lineIndex) {
     const ContextLine &line = lines[lineIndex];
     const int lineY = lineTops[lineIndex] + scrollOffset;
@@ -2665,10 +2689,15 @@ void DisplayManager::renderScrollView(const std::vector<ContextWord> &words, uin
       const ContextWord &word = words[wordIndex];
       const uint16_t color =
           (word.current && currentFocusHighlightEnabled()) ? focusColor() : wordColor();
-      const String visibleWord =
-          fitSerifText(word.text, virtualWidth - x - kScrollMarginX, kScrollSerifDivisor);
-      drawSerifTextAt(visibleWord, x, lineY, color, kScrollSerifDivisor);
-      x += measureSerifTextWidth(visibleWord, kScrollSerifDivisor) + kScrollSpaceWidth;
+      if (isCjkText(word.text)) {
+        cjkSegments.push_back({word.text, x, lineY, color});
+        x += cjkDisplayWidth(cjkFont, word.text) + kScrollSpaceWidth;
+      } else {
+        const String visibleWord =
+            fitSerifText(word.text, virtualWidth - x - kScrollMarginX, kScrollSerifDivisor);
+        drawSerifTextAt(visibleWord, x, lineY, color, kScrollSerifDivisor);
+        x += measureSerifTextWidth(visibleWord, kScrollSerifDivisor) + kScrollSpaceWidth;
+      }
     }
   }
 
@@ -2688,6 +2717,15 @@ void DisplayManager::renderScrollView(const std::vector<ContextWord> &words, uin
     drawBatteryBadge();
   }
   flushScaledFrame(scale, virtualWidth, virtualHeight);
+
+  if (!cjkSegments.empty()) {
+    M5.Display.startWrite();
+    M5.Display.setTextDatum(m5gfx::textdatum_t::top_left);
+    for (const CjkSegment &seg : cjkSegments) {
+      drawCjkSegment(cjkFont, seg.text, seg.x, seg.y, seg.color);
+    }
+    M5.Display.endWrite();
+  }
 }
 
 void DisplayManager::renderMenu(const char *const *items, size_t itemCount, size_t selectedIndex) {
@@ -2762,10 +2800,10 @@ void DisplayManager::renderMenu(const std::vector<String> &items, size_t selecte
     const uint16_t color = selected ? focusColor() : dimColor();
     const int maxWidth = virtualWidth - kCompactMenuX - 16;
     if (selected) {
-      fillVirtualRect(10, y + 2, 5, kTinyGlyphHeight * kTinyScale + 2, selectedBarColor());
+      fillVirtualRect(10, y + 3, 5, kTinyGlyphHeight * kMenuTextScale + 2, selectedBarColor());
     }
-    drawTinyTextAt(fitTinyText(items[itemIndex], maxWidth, kTinyScale), kCompactMenuX, y + 3, color,
-                   kTinyScale);
+    drawTinyTextAt(fitTinyText(items[itemIndex], maxWidth, kMenuTextScale), kCompactMenuX, y + 4, color,
+                   kMenuTextScale);
     y += rowHeight;
   }
 

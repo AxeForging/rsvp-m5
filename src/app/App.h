@@ -39,9 +39,18 @@ public:
 
     void begin();
     void update(uint32_t nowMs);
-    // Idle delay for the main loop to yield the core between polls. Tight while Playing so word
-    // timing stays precise; looser otherwise (input still polls well above the ~13 words/s ceiling).
-    uint32_t loopIdleMs() const { return state_ == AppState::Playing ? 2 : 15; }
+    // Idle delay for the main loop to yield the core between polls. Kept small in interactive states
+    // so touch/buttons sample at the input layer's rate (8 ms) and register immediately; only the
+    // truly idle screensaver/sleep states loosen it to save a little power.
+    uint32_t loopIdleMs() const {
+        switch (state_) {
+            case AppState::Standby:
+            case AppState::Sleeping:
+                return 16;
+            default:
+                return 2;
+        }
+    }
 
 private:
     static constexpr size_t kOtaVersionLabelMax = 32;
@@ -224,6 +233,7 @@ private:
     bool isActivelyReading() const;
     bool readerFooterVisible() const;
     DisplayManager::ReaderChrome readerChrome() const;
+    DisplayManager::ReaderChrome cleanReaderChrome() const;
     String readerFooterStatusLabel() const;
     String onOffLabel(bool enabled) const;
     int scrubStepsForDrag(int deltaX) const;
@@ -235,6 +245,7 @@ private:
     void applyFocusTimerTouch(const TouchEvent& event, uint32_t nowMs);
     void moveMenuSelection(int direction);
     void selectMenuItem(uint32_t nowMs);
+    void menuBack(uint32_t nowMs);
     bool isSettingsMenuScreen(MenuScreen screen) const;
     void openArticlesMenu();
     void selectArticlesItem(uint32_t nowMs);
@@ -460,6 +471,7 @@ private:
     uint32_t batteryRuntimeAnchorMs_ = 0;
     uint32_t lastScrollAnimationRenderMs_ = 0;
     uint32_t lastCompanionSyncRenderMs_ = 0;
+    uint32_t lastWpmAdjustMs_ = 0;
     uint32_t standbyEnteredMs_ = 0;
     uint32_t lastStandbyFrameMs_ = 0;
     uint32_t lastKeyButtonTapMs_ = 0;

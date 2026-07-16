@@ -38,6 +38,8 @@ constexpr uint16_t kQuickSettingsSwipeBottomZonePx =
     kReaderChromeBottomMarginPx + (Board::Config::ENABLE_BOTTOM_EDGE_QUICK_SETTINGS_SWIPE ? 64 : 0);
 constexpr uint16_t kMenuSwipeTriggerPx = 72;
 constexpr uint16_t kScrubStepPx = 22;
+constexpr int kScrubAccelDivisor = 2500;  // quadratic scrub accel: long swipes jump many words
+constexpr uint32_t kWpmAdjustCooldownMs = 130;  // small settle between speed steps so it isn't twitchy
 constexpr uint16_t kBrowseNeutralZonePx = 14;
 constexpr uint16_t kFocusTimerCancelHoldMaxDriftPx = 20;
 constexpr int kMaxScrubStepsPerGesture = 96;
@@ -1133,38 +1135,7 @@ bool App::handleMenuInput(const Input::Event& event, uint32_t nowMs) {
     }
 
     if (Input::hasControl(event.controls, Input::InputPrimary) && event.gesture == Input::Gesture::ShortPressed) {
-        if (menuScreen_ == MenuScreen::Main || menuScreen_ == MenuScreen::QuickSettings) {
-            setState(AppState::Paused, nowMs);
-        } else if (menuScreen_ == MenuScreen::QuickSync) {
-            menuScreen_ = MenuScreen::QuickSettings;
-            renderQuickSettings();
-        } else if (Board::Config::ENABLE_RESTRUCTURED_MENU && menuScreen_ == MenuScreen::Articles) {
-            menuScreen_ = MenuScreen::Main;
-            renderMainMenu();
-        } else if (Board::Config::ENABLE_RESTRUCTURED_MENU && menuScreen_ == MenuScreen::SettingsHome) {
-            menuScreen_ = MenuScreen::Main;
-            renderMainMenu();
-        } else if (Board::Config::ENABLE_RESTRUCTURED_MENU && menuScreen_ == MenuScreen::WifiNetworkSettings) {
-            openWifiSettings();
-        } else if (Board::Config::ENABLE_RESTRUCTURED_MENU
-                   && (menuScreen_ == MenuScreen::SettingsDisplay || menuScreen_ == MenuScreen::SettingsPacing
-                       || menuScreen_ == MenuScreen::WifiSettings || menuScreen_ == MenuScreen::TypographyTuning)) {
-            if (menuScreen_ == MenuScreen::SettingsDisplay) {
-                settingsSelectedIndex_ = kSettingsHomeRestructuredDisplayIndex;
-            } else if (menuScreen_ == MenuScreen::SettingsPacing) {
-                flushPendingTimeEstimateRebuild();
-                settingsSelectedIndex_ = kSettingsHomeRestructuredPacingIndex;
-            } else if (menuScreen_ == MenuScreen::WifiSettings) {
-                settingsSelectedIndex_ = kSettingsHomeRestructuredWifiIndex;
-            } else {
-                settingsSelectedIndex_ = kSettingsHomeRestructuredTypographyIndex;
-            }
-            menuScreen_ = MenuScreen::SettingsHome;
-            rebuildSettingsMenuItems();
-            renderSettings();
-        } else {
-            toggleMenuFromPowerButton(nowMs);
-        }
+        menuBack(nowMs);
         return true;
     }
 
@@ -1800,6 +1771,19 @@ DisplayManager::ReaderChrome App::readerChrome() const {
     return chrome;
 }
 
+// The full-page multi-line views (scroll mode + the swipe-to-browse context preview) are a clean
+// read: no battery, chapter, progress, or rewind chrome. The surrounding text already shows
+// position, and dropping the chrome maximises the reading area.
+DisplayManager::ReaderChrome App::cleanReaderChrome() const {
+    DisplayManager::ReaderChrome chrome;
+    chrome.showBattery = false;
+    chrome.showChapter = false;
+    chrome.showProgress = false;
+    chrome.showPreviousSentenceHint = false;
+    chrome.playing = isActivelyReading();
+    return chrome;
+}
+
 bool App::readerFooterVisible() const {
     const DisplayManager::ReaderChrome chrome = readerChrome();
     return chrome.showChapter || chrome.showProgress;
@@ -1838,6 +1822,11 @@ void App::rewindSentenceAction(uint32_t nowMs) {
 // delta > 0 speeds up, < 0 slows down (ReadingLoop applies the WPM step). Persists the new
 // rate and flashes the WPM overlay; safe to call live while playing (does not change state).
 void App::adjustReaderWpm(int delta, uint32_t nowMs) {
+    // Small settle between steps so a quick double-tap of slower/faster changes speed once, not twice.
+    if (nowMs - lastWpmAdjustMs_ < kWpmAdjustCooldownMs) {
+        return;
+    }
+    lastWpmAdjustMs_ = nowMs;
     reader_.adjustWpm(delta);
     preferences_.putUShort(kPrefWpm, reader_.wpm());
     renderWpmFeedback(nowMs);
@@ -2080,7 +2069,11 @@ int App::scrubStepsForDrag(int deltaX) const {
         return 0;
     }
 
-    int steps = 1 + ((absDeltaX - static_cast<int>(kSwipeThresholdPx)) / static_cast<int>(kScrubStepPx));
+    // Accelerate: a short drag is precise (a word or two), a long drag covers a lot of ground. The
+    // quadratic term makes a full-width swipe jump tens of words instead of ~11 -- important for CJK,
+    // where each "word" is a single character.
+    const int over = absDeltaX - static_cast<int>(kSwipeThresholdPx);
+    int steps = 1 + (over / static_cast<int>(kScrubStepPx)) + ((over * over) / kScrubAccelDivisor);
     steps = std::min(steps, kMaxScrubStepsPerGesture);
 
     return (deltaX > 0) ? steps : -steps;
@@ -2133,7 +2126,7 @@ void App::renderContextBrowsePreview(size_t currentIndex, uint16_t scrollProgres
 
     updateContextPreviewWindow(currentIndex);
     contextViewVisible_ = true;
-    const DisplayManager::ReaderChrome chrome = readerChrome();
+    const DisplayManager::ReaderChrome chrome = cleanReaderChrome();
     display_.renderScrollView(contextPreviewWords_, currentReaderContentToken(), contextPreviewStartIndex_,
                               currentIndex, scrollProgressPermille, currentChapterLabel(), readingProgressPercent(), "",
                               readerFooterStatusLabel(), chrome);
@@ -2164,6 +2157,43 @@ void App::applyBrowseHoldScroll(uint16_t y, uint32_t elapsedMs, uint32_t nowMs) 
     renderContextBrowsePreview(reader_.currentIndex(), static_cast<uint16_t>(remainderPermille));
     Serial.printf("[app] browse hold target=%d progress=%ld word=%s\n", targetWords,
                   static_cast<long>(remainderPermille), reader_.currentWord().c_str());
+}
+
+// One step "back" from the current menu screen: submenus return to their parent, the main menu
+// (and quick settings) exits to the reader. Shared by the centre button and the left-swipe gesture.
+void App::menuBack(uint32_t nowMs) {
+    if (menuScreen_ == MenuScreen::Main || menuScreen_ == MenuScreen::QuickSettings) {
+        setState(AppState::Paused, nowMs);
+    } else if (menuScreen_ == MenuScreen::QuickSync) {
+        menuScreen_ = MenuScreen::QuickSettings;
+        renderQuickSettings();
+    } else if (Board::Config::ENABLE_RESTRUCTURED_MENU && menuScreen_ == MenuScreen::Articles) {
+        menuScreen_ = MenuScreen::Main;
+        renderMainMenu();
+    } else if (Board::Config::ENABLE_RESTRUCTURED_MENU && menuScreen_ == MenuScreen::SettingsHome) {
+        menuScreen_ = MenuScreen::Main;
+        renderMainMenu();
+    } else if (Board::Config::ENABLE_RESTRUCTURED_MENU && menuScreen_ == MenuScreen::WifiNetworkSettings) {
+        openWifiSettings();
+    } else if (Board::Config::ENABLE_RESTRUCTURED_MENU
+               && (menuScreen_ == MenuScreen::SettingsDisplay || menuScreen_ == MenuScreen::SettingsPacing
+                   || menuScreen_ == MenuScreen::WifiSettings || menuScreen_ == MenuScreen::TypographyTuning)) {
+        if (menuScreen_ == MenuScreen::SettingsDisplay) {
+            settingsSelectedIndex_ = kSettingsHomeRestructuredDisplayIndex;
+        } else if (menuScreen_ == MenuScreen::SettingsPacing) {
+            flushPendingTimeEstimateRebuild();
+            settingsSelectedIndex_ = kSettingsHomeRestructuredPacingIndex;
+        } else if (menuScreen_ == MenuScreen::WifiSettings) {
+            settingsSelectedIndex_ = kSettingsHomeRestructuredWifiIndex;
+        } else {
+            settingsSelectedIndex_ = kSettingsHomeRestructuredTypographyIndex;
+        }
+        menuScreen_ = MenuScreen::SettingsHome;
+        rebuildSettingsMenuItems();
+        renderSettings();
+    } else {
+        toggleMenuFromPowerButton(nowMs);
+    }
 }
 
 void App::applyMenuTouchGesture(const TouchEvent& event, uint32_t nowMs) {
@@ -2213,6 +2243,16 @@ void App::applyMenuTouchGesture(const TouchEvent& event, uint32_t nowMs) {
 
     if (absDeltaY >= static_cast<int>(kSwipeThresholdPx) && absDeltaY > absDeltaX + static_cast<int>(kAxisBiasPx)) {
         moveMenuSelection(deltaY < 0 ? -1 : 1);
+        return;
+    }
+
+    // Horizontal swipe navigates the menu hierarchy: right = enter (like a tap), left = back.
+    if (absDeltaX >= static_cast<int>(kSwipeThresholdPx) && absDeltaX > absDeltaY + static_cast<int>(kAxisBiasPx)) {
+        if (deltaX > 0) {
+            selectMenuItem(nowMs);
+        } else {
+            menuBack(nowMs);
+        }
         return;
     }
 
@@ -6593,7 +6633,7 @@ void App::renderContextPreview() {
     updateContextPreviewWindow(currentIndex);
 
     contextViewVisible_ = true;
-    const DisplayManager::ReaderChrome chrome = readerChrome();
+    const DisplayManager::ReaderChrome chrome = cleanReaderChrome();
     display_.renderScrollView(contextPreviewWords_, currentReaderContentToken(), contextPreviewStartIndex_,
                               currentIndex, 0, currentChapterLabel(), readingProgressPercent(), "",
                               readerFooterStatusLabel(), chrome);
@@ -6621,7 +6661,7 @@ void App::renderScrollReader(uint32_t nowMs, const String& overlayText) {
         }
     }
 
-    const DisplayManager::ReaderChrome chrome = readerChrome();
+    const DisplayManager::ReaderChrome chrome = cleanReaderChrome();
     display_.renderScrollView(contextPreviewWords_, currentReaderContentToken(), contextPreviewStartIndex_,
                               currentIndex, scrollProgressPermille, currentChapterLabel(), readingProgressPercent(),
                               overlayText, readerFooterStatusLabel(), chrome);

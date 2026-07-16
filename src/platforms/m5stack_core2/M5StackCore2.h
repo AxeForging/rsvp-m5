@@ -15,7 +15,7 @@ namespace M5StackCore2::Buttons {
 constexpr int kBootPin = -1;
 constexpr int kPowerPin = -1;
 constexpr int kKeyPin = -1;
-constexpr uint16_t kDebounceMs = 25;
+constexpr uint16_t kDebounceMs = 12;  // capacitive buttons don't bounce; keep slower/faster snappy
 constexpr uint16_t kShortPressMaxMs = 700;
 constexpr uint16_t kLongPressMs = 900;
 }  // namespace M5StackCore2::Buttons
@@ -79,7 +79,7 @@ constexpr uint8_t kAddress = 0x38;  // FT6336U.
 constexpr bool kReleaseBusBeforeRead = false;
 constexpr uint8_t kReleaseConfirmSamples = 2;
 constexpr uint8_t kMaxConsecutiveReadFailures = 5;
-constexpr uint32_t kPollIntervalMs = 20;
+constexpr uint32_t kPollIntervalMs = 8;  // ~125 Hz touch sampling (was 50 Hz) for snappier taps/scrub
 constexpr uint32_t kFailureBackoffMs = 250;
 constexpr uint32_t kRecoveryRetryMs = 1000;
 constexpr uint32_t kRecoveryEventIgnoreMs = 0;
