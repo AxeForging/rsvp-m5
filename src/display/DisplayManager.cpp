@@ -6,10 +6,14 @@
 #include <esp_heap_caps.h>
 #include <esp_log.h>
 
+// SD.h MUST precede M5Unified/M5GFX: it enables M5GFX's SD loadFont() overload (otherwise the
+// generic DataWrapperT is abstract and loadFont(SD, ...) fails to compile).
+#include <SD.h>
 #include <M5Unified.h>  // M5Canvas + bundled Unicode CJK fonts for the reader's CJK render path
 
 #include "board/BoardDisplay.h"
 #include "board/BoardConfig.h"
+#include "board/BoardStorage.h"
 #include "display/EmbeddedBootImage.h"
 #include "display/EmbeddedAtkinsonFont.h"
 #include "display/EmbeddedAtkinsonFont70.h"
@@ -2142,6 +2146,32 @@ bool isCjkText(const String &s) {
   return false;
 }
 
+// The downloaded Noto Sans CJK VLW font on the SD card, once loaded: anti-aliased, native size
+// (crisp), and complete (no tofu). Loaded once and kept; M5GFX streams glyphs from the file on
+// demand, so it does not sit in RAM. Until it is present we fall back to the bundled efont.
+constexpr const char *kCjkVlwPath = "/fonts/cjk.vlw";
+const lgfx::IFont *gCjkVlw = nullptr;
+bool gCjkVlwBad = false;
+
+const lgfx::IFont *cjkVlwFont() {
+  if (gCjkVlw != nullptr || gCjkVlwBad) {
+    return gCjkVlw;
+  }
+  if (!SD.exists(kCjkVlwPath)) {
+    return nullptr;  // not downloaded yet -- re-check on a later render (efont fallback meanwhile)
+  }
+  const lgfx::IFont *previous = M5.Display.getFont();
+  if (M5.Display.loadFont(SD, kCjkVlwPath)) {  // concrete SDFS -> valid DataWrapperT
+    gCjkVlw = M5.Display.getFont();     // held alive in the display's runtime-font slot
+    M5.Display.setFont(previous);       // restore; the VLW stays loaded for setFont() later
+    Serial.println("[cjk] loaded VLW font from SD");
+  } else {
+    gCjkVlwBad = true;                  // corrupt/incompatible -- stop retrying, keep efont
+    Serial.println("[cjk] VLW load failed; using efont");
+  }
+  return gCjkVlw;
+}
+
 // Measure `utf8` in `font` at the CJK draw size using the live display's metrics.
 int cjkDisplayWidth(const lgfx::IFont *font, const String &utf8) {
   if (utf8.isEmpty()) {
@@ -2175,7 +2205,13 @@ void DisplayManager::renderCjkPhantom(const String &beforeText, const String &wo
                                       const String &chapterLabel, uint8_t progressPercent,
                                       bool showFooter, const String &footerStatusLabel,
                                       ReaderChrome chrome) {
-  const int glyphH = kCjkBaseFontPx * kCjkSizeScale;
+  // Prefer the downloaded Noto VLW (crisp, complete, all scripts in one font); otherwise fall back
+  // to the bundled efont chosen per script. Size the layout from the actual font height.
+  const lgfx::IFont *vlw = cjkVlwFont();
+  const lgfx::IFont *font = vlw ? vlw : cjkFontForContext(beforeText + word + afterText);
+  M5.Display.setFont(font);
+  M5.Display.setTextSize(kCjkSizeScale);
+  const int glyphH = std::max(1, static_cast<int>(M5.Display.fontHeight()));
   const int textY = std::max(0, (kDisplayHeight - glyphH) / 2);
   const int anchorX = (kDisplayWidth * currentAnchorPercent()) / 100;
   const int gap = 12;
@@ -2201,10 +2237,8 @@ void DisplayManager::renderCjkPhantom(const String &beforeText, const String &wo
   flushScaledFrame(1, kDisplayWidth, kDisplayHeight);
 
   // Overlay the glyphs directly. M5.Display takes normal RGB565 (converts internally) -- do NOT use
-  // the panel-swapped colours the frame buffer stores. One font for the whole line (chosen from the
-  // combined script) keeps a section consistent. The focus is accent only when it is really CJK --
-  // a Latin word routed here (a section header next to CJK) stays white, not fully highlighted.
-  const lgfx::IFont *font = cjkFontForContext(beforeText + word + afterText);
+  // the panel-swapped colours the frame buffer stores. The focus is accent only when it is really
+  // CJK -- a Latin word routed here (a section header next to CJK) stays white, not highlighted.
   const uint16_t focusCol = isCjkText(word) ? focusColor() : wordColor();
   const int wFocus = cjkDisplayWidth(font, word);
   const int focusX = anchorX - wFocus / 2;  // centre the focus character on the anchor
