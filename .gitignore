@@ -31,3 +31,8 @@ RSVPNanoCompanion/
 build/
 .gradle/
 .kotlin/
+
+# Hi-res mascot source exports; the optimized web copies live in web/img/
+/raccoon-reading-transparent.png
+/raccoon-reading-bus-straps-transparent.png
+/raccoon-reading-device-transparent.png
