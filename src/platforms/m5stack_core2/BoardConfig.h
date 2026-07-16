@@ -1,12 +1,14 @@
 #pragma once
 
+#include "i18n/Language.h"
 #include "platforms/m5stack_core2/M5StackCore2.h"
 
 namespace Board::Config {
 
 constexpr const char *BOARD_ID = "m5stack_core2";
 constexpr const char *BOARD_LABEL = "M5Stack Core2";
-constexpr const char *OTA_ASSET_NAME = "rsvp-m5-core2-ota.bin";
+// Per-language OTA asset, so a device pulls the update built with its own bundled font.
+constexpr const char *OTA_ASSET_NAME = "rsvp-m5-core2-" RSVP_LANG_SUFFIX "-ota.bin";
 
 constexpr bool ENABLE_TOP_EDGE_MENU_SWIPE = true;
 // Reader touch is deliberately minimal: tap = play/pause, top-swipe = menu, horizontal

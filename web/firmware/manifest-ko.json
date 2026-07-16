@@ -1,0 +1,23 @@
+{
+  "name": "RSVP M5 (Korean / \ud55c\uad6d\uc5b4)",
+  "version": "v0.0.7",
+  "new_install_prompt_erase": true,
+  "new_install_improv_wait_time": 0,
+  "features": [
+    "Books and articles library",
+    "Device-hosted web companion",
+    "RSS feed downloads"
+  ],
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "improv": false,
+      "parts": [
+        {
+          "path": "rsvp-m5-core2-ko.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}

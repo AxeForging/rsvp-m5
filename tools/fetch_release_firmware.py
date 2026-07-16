@@ -12,31 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB_FIRMWARE_DIR = ROOT / "web" / "firmware"
-MANIFEST_PATH = WEB_FIRMWARE_DIR / "manifest.json"
 DEFAULT_REPO = "AxeForging/rsvp-m5"
-DEFAULT_REQUIRED_ASSETS = (
-    "rsvp-m5-core2.bin",
-    "rsvp-m5-core2-ota.bin",
-)
-# M5Stack Core2 is a classic ESP32 (not ESP32-S3).
-DEFAULT_MANIFEST = {
-    "name": "RSVP M5",
-    "version": "dev",
-    "new_install_prompt_erase": True,
-    "new_install_improv_wait_time": 0,
-    "builds": [
-        {
-            "chipFamily": "ESP32",
-            "improv": False,
-            "parts": [
-                {
-                    "path": "rsvp-m5-core2.bin",
-                    "offset": 0,
-                }
-            ],
-        }
-    ],
-}
 
 
 def github_headers() -> dict[str, str]:
@@ -78,23 +54,23 @@ def latest_release(repo: str) -> dict:
     return fetch_json(f"https://api.github.com/repos/{repo}/releases/latest")
 
 
-def find_asset(release: dict, name: str) -> dict:
+def find_asset(release: dict, name: str) -> dict | None:
     for asset in release.get("assets", []):
         if asset.get("name") == name:
             return asset
-    raise SystemExit(f"Latest release is missing required asset: {name}")
+    return None
 
 
-def load_manifest(path: Path, fallback: dict) -> dict:
-    if not path.exists():
-        return json.loads(json.dumps(fallback))
-    return json.loads(path.read_text())
+def committed_languages() -> list[str]:
+    # The per-language manifests are tracked in git; they define which reading languages exist.
+    return sorted(p.stem[len("manifest-"):] for p in WEB_FIRMWARE_DIR.glob("manifest-*.json"))
 
 
-def write_manifest(version: str) -> None:
-    manifest = load_manifest(MANIFEST_PATH, DEFAULT_MANIFEST)
-    manifest["version"] = version
-    MANIFEST_PATH.write_text(json.dumps(manifest, indent=2) + "\n")
+def stamp_manifest_versions(version: str) -> None:
+    for path in WEB_FIRMWARE_DIR.glob("manifest-*.json"):
+        manifest = json.loads(path.read_text())
+        manifest["version"] = version
+        path.write_text(json.dumps(manifest, indent=2) + "\n")
 
 
 def main() -> int:
@@ -121,18 +97,29 @@ def main() -> int:
 
     WEB_FIRMWARE_DIR.mkdir(parents=True, exist_ok=True)
 
-    assets = tuple(args.assets) if args.assets else DEFAULT_REQUIRED_ASSETS
+    # The flasher serves the full per-language flash images from Pages; download whichever the
+    # latest release actually carries. Missing ones (e.g. a release cut before this language existed)
+    # are skipped, not fatal -- the flasher then shows that language as unavailable.
+    assets = list(args.assets) if args.assets else [
+        f"rsvp-m5-core2-{lang}.bin" for lang in committed_languages()
+    ]
+    downloaded = 0
     for asset_name in assets:
         asset = find_asset(release, asset_name)
+        if asset is None:
+            print(f"Skipping {asset_name}: not in release {tag_name}")
+            continue
         url = str(asset.get("browser_download_url", "")).strip()
         if not url:
-            raise SystemExit(f"Release asset is missing browser_download_url: {asset_name}")
+            print(f"Skipping {asset_name}: missing browser_download_url")
+            continue
         destination = WEB_FIRMWARE_DIR / asset_name
         print(f"Downloading {asset_name} from {tag_name} -> {destination}")
         download_file(url, destination)
+        downloaded += 1
 
-    write_manifest(tag_name)
-    print(f"Web firmware updated to release {tag_name}")
+    stamp_manifest_versions(tag_name)
+    print(f"Web firmware updated to release {tag_name} ({downloaded} image(s))")
     return 0
 
 

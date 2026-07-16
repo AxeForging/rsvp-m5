@@ -15,14 +15,28 @@ function timeAgo(ts) {
 
 class InstallFirmware extends HTMLElement {
   connectedCallback() {
-    const firmwareOptions = [
-      {
-        manifest: "firmware/manifest.json",
-        title: "M5Stack Core2",
-        badge: "ESP32",
-        note: "Firmware for the M5Stack Core2 v1.1 (ESP32, AXP2101).",
-      },
-    ];
+    this._init();
+  }
+
+  // The device bundles ONE reading language's font (the linker drops the rest), so the flasher
+  // offers a per-language build. languages.json lists them; picking one re-points the installer at
+  // that language's manifest. Falls back to a single English entry if the index is unavailable.
+  async _init() {
+    let languages = [{ code: "en", label: "English", manifest: "firmware/manifest-en.json" }];
+    let defaultLang = "en";
+    try {
+      const r = await fetch("firmware/languages.json", { cache: "no-store" });
+      if (r.ok) {
+        const data = await r.json();
+        if (Array.isArray(data.languages) && data.languages.length) languages = data.languages;
+        if (data.default) defaultLang = data.default;
+      }
+    } catch (e) {
+      /* keep the English fallback */
+    }
+    this._languages = languages;
+    const initial = languages.find((l) => l.code === defaultLang) || languages[0];
+
     const hardwareLinks = [
       {
         title: "M5Stack Core2",
@@ -65,33 +79,40 @@ class InstallFirmware extends HTMLElement {
                 `).join("")}
               </div>
             </div>
-            <div class="install-options">
-              ${firmwareOptions.map((option) => `
-            <div class="install-option" data-manifest="${option.manifest}" data-title="${option.title}">
-              <div class="install-option-head">
-                <strong class="fw-version">${option.title}</strong>
-                <span class="latest-badge"><span class="pulse-dot"></span>${option.badge}</span>
-              </div>
-              <p>${option.note}</p>
-              <ul class="feature-list"></ul>
-              <div class="uptodate-badge" hidden>
-                <span class="uptodate-left">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  Up to date
-                </span>
-                <span class="uptodate-right">
-                  <span class="uptodate-version"></span>
-                  <span class="uptodate-ago"></span>
-                </span>
-              </div>
-              <esp-web-install-button manifest="${option.manifest}">
-                <button class="firmware-install-btn" slot="activate">Install Firmware</button>
-                <span slot="unsupported">Use Chrome or Edge on desktop with Web Serial support.</span>
-                <span slot="not-allowed">This page must be opened over HTTPS or localhost.</span>
-              </esp-web-install-button>
-              <p class="install-warning">Important: keep the device plugged in until the installer says it's done.</p>
+            <div class="lang-picker">
+              <label for="lang-select">Reading language</label>
+              <select id="lang-select">
+                ${this._languages.map((l) => `
+                <option value="${l.code}" data-manifest="${l.manifest}" ${l.code === initial.code ? "selected" : ""}>${l.label}</option>
+                `).join("")}
+              </select>
+              <p class="lang-note">The device bundles this language's font and reads it out of the box. Any build can download the full multi-script font later from the device Update menu.</p>
             </div>
-              `).join("")}
+            <div class="install-options">
+              <div class="install-option" data-manifest="${initial.manifest}" data-title="M5Stack Core2">
+                <div class="install-option-head">
+                  <strong class="fw-version">M5Stack Core2</strong>
+                  <span class="latest-badge"><span class="pulse-dot"></span>ESP32</span>
+                </div>
+                <p>Firmware for the M5Stack Core2 v1.1 (ESP32, AXP2101).</p>
+                <ul class="feature-list"></ul>
+                <div class="uptodate-badge" hidden>
+                  <span class="uptodate-left">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Up to date
+                  </span>
+                  <span class="uptodate-right">
+                    <span class="uptodate-version"></span>
+                    <span class="uptodate-ago"></span>
+                  </span>
+                </div>
+                <esp-web-install-button manifest="${initial.manifest}">
+                  <button class="firmware-install-btn" slot="activate">Install Firmware</button>
+                  <span slot="unsupported">Use Chrome or Edge on desktop with Web Serial support.</span>
+                  <span slot="not-allowed">This page must be opened over HTTPS or localhost.</span>
+                </esp-web-install-button>
+                <p class="install-warning">Important: keep the device plugged in until the installer says it's done.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -114,60 +135,77 @@ class InstallFirmware extends HTMLElement {
     this._autoCollapse();
     this._observeInstallDialog();
 
-    this.querySelectorAll(".install-option").forEach((option) => {
-      option.querySelector('button[slot="activate"]').addEventListener("click", () => {
-        this._activeInstall = {
-          manifest: option.dataset.manifest,
-          title: option.dataset.title,
-          version: option.dataset.version,
-        };
-      });
-
-      fetch(option.dataset.manifest, { cache: "no-store" })
-        .then((r) => {
-          if (!r.ok) throw new Error("Manifest unavailable");
-          return r.json();
-        })
-        .then((m) => {
-          option.dataset.available = "true";
-          option.dataset.version = m.version;
-          option.querySelector(".fw-version").textContent =
-            option.dataset.title + " - " + m.version;
-          if (m.features) {
-            const ul = option.querySelector(".feature-list");
-            ul.innerHTML = m.features.map(f => "<li>" + f + "</li>").join("");
-          }
-          // esp-web-tools fetches the manifest (and the .bin it names) through the ordinary
-          // browser HTTP cache, so a visitor who flashed an earlier release gets served the
-          // STALE manifest/binary -- the confirm dialog and the firmware lag a release behind.
-          // Hand it our fresh (no-store) manifest as a blob, with absolute, version-keyed .bin
-          // URLs so both are re-fetched whenever the release changes.
-          try {
-            const manifestUrl = new URL(option.dataset.manifest, document.baseURI);
-            const fresh = JSON.parse(JSON.stringify(m));
-            (fresh.builds || []).forEach((b) => (b.parts || []).forEach((p) => {
-              const sep = p.path.indexOf("?") === -1 ? "?" : "&";
-              p.path = new URL(p.path, manifestUrl).href + sep + "v=" + encodeURIComponent(m.version);
-            }));
-            const blobUrl = URL.createObjectURL(
-              new Blob([JSON.stringify(fresh)], { type: "application/json" }));
-            const espButton = option.querySelector("esp-web-install-button");
-            if (espButton) espButton.setAttribute("manifest", blobUrl);
-          } catch (e) {
-            /* fall back to the static manifest attribute */
-          }
-          this._refreshInstallOption(option);
-          this._showFlashHistory();
-        })
-        .catch(() => {
-          option.dataset.available = "false";
-          option.querySelector(".fw-version").textContent =
-            option.dataset.title + " - unavailable";
-          const ul = option.querySelector(".feature-list");
-          ul.innerHTML = "<li>Not available in the latest published release yet.</li>";
-          this._refreshInstallOption(option);
-        });
+    const option = this.querySelector(".install-option");
+    option.querySelector('button[slot="activate"]').addEventListener("click", () => {
+      this._activeInstall = {
+        manifest: option.dataset.manifest,
+        title: option.dataset.title,
+        version: option.dataset.version,
+      };
     });
+
+    const langSelect = this.querySelector("#lang-select");
+    if (langSelect) {
+      langSelect.addEventListener("change", () => {
+        const chosen = langSelect.selectedOptions[0];
+        option.dataset.manifest = chosen.dataset.manifest;
+        delete option.dataset.version;
+        delete option.dataset.available;
+        this._loadManifest(option);
+      });
+    }
+
+    this._loadManifest(option);
+  }
+
+  _loadManifest(option) {
+    const title = option.dataset.title;
+    const requested = option.dataset.manifest;
+    fetch(requested, { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) throw new Error("Manifest unavailable");
+        return r.json();
+      })
+      .then((m) => {
+        // A slow response may land after the user switched language again -- ignore the stale one.
+        if (option.dataset.manifest !== requested) return;
+        option.dataset.available = "true";
+        option.dataset.version = m.version;
+        option.querySelector(".fw-version").textContent = title + " - " + m.version;
+        if (m.features) {
+          const ul = option.querySelector(".feature-list");
+          ul.innerHTML = m.features.map(f => "<li>" + f + "</li>").join("");
+        }
+        // esp-web-tools fetches the manifest (and the .bin it names) through the ordinary
+        // browser HTTP cache, so a visitor who flashed an earlier release gets served the
+        // STALE manifest/binary -- the confirm dialog and the firmware lag a release behind.
+        // Hand it our fresh (no-store) manifest as a blob, with absolute, version-keyed .bin
+        // URLs so both are re-fetched whenever the release (or selected language) changes.
+        try {
+          const manifestUrl = new URL(option.dataset.manifest, document.baseURI);
+          const fresh = JSON.parse(JSON.stringify(m));
+          (fresh.builds || []).forEach((b) => (b.parts || []).forEach((p) => {
+            const sep = p.path.indexOf("?") === -1 ? "?" : "&";
+            p.path = new URL(p.path, manifestUrl).href + sep + "v=" + encodeURIComponent(m.version);
+          }));
+          const blobUrl = URL.createObjectURL(
+            new Blob([JSON.stringify(fresh)], { type: "application/json" }));
+          const espButton = option.querySelector("esp-web-install-button");
+          if (espButton) espButton.setAttribute("manifest", blobUrl);
+        } catch (e) {
+          /* fall back to the static manifest attribute */
+        }
+        this._refreshInstallOption(option);
+        this._showFlashHistory();
+      })
+      .catch(() => {
+        if (option.dataset.manifest !== requested) return;
+        option.dataset.available = "false";
+        option.querySelector(".fw-version").textContent = title + " - unavailable";
+        const ul = option.querySelector(".feature-list");
+        ul.innerHTML = "<li>Not available in the latest published release yet.</li>";
+        this._refreshInstallOption(option);
+      });
   }
 
   _readFlashData() {

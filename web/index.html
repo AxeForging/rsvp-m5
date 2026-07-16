@@ -343,6 +343,34 @@
         gap: 12px;
       }
 
+      .lang-picker {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .lang-picker label {
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .lang-picker select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: var(--af-radius-lg);
+        background: var(--af-surface-3);
+        color: inherit;
+        font: inherit;
+      }
+
+      .lang-note {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.45;
+      }
+
       .affiliate-links {
         display: grid;
         gap: 10px;
@@ -1202,26 +1230,25 @@
               the generated <code>.rsvp</code> files in the SD card&rsquo;s <code>/books/books</code> folder.
             </p>
             <ol>
-              <li>Insert the SD card into the reader.</li>
-              <li>Open <code>USB transfer</code> on the device, or remove the card and use a card reader.</li>
+              <li>Remove the SD card and use a card reader, or send files wirelessly with <code>Sync</code> from the device menu.</li>
               <li>Pick the SD card&rsquo;s <code>/books/books</code> folder in the workspace below, then import, clean sidecars, and sync.</li>
             </ol>
             <p class="inline-note">
-              The firmware can read <code>.rsvp</code>, <code>.txt</code>, and <code>.epub</code>
-              files from <code>/books/books</code>, <code>/books/articles</code>, and files directly
-              under <code>/books</code>, but browser-converted <code>.rsvp</code> files are
-              the best-supported book format.
+              The firmware reads <code>.rsvp</code> and <code>.txt</code> files from
+              <code>/books/books</code>, <code>/books/articles</code>, and files directly under
+              <code>/books</code>. Convert EPUB, HTML, and Markdown in the browser first, then place
+              the generated <code>.rsvp</code> files on the card.
             </p>
           </div>
           <div class="section-body-inner">
             <div class="section-card-stack">
               <div class="meta-card">
-                <span>USB Transfer</span>
-                <strong>Expose the SD card from the device menu</strong>
+                <span>Wi-Fi Sync</span>
+                <strong>Send books from the device-hosted companion</strong>
                 <p class="meta-card-copy">
-                  On the default USB-enabled firmware, open <code>USB transfer</code> from the main
-                  menu to expose the SD card over USB. When you finish copying files, eject the
-                  device from your computer, then hold <code>PWR</code> to leave transfer mode.
+                  Open <code>Sync</code> from the device menu to host a companion page over Wi-Fi.
+                  Upload <code>.rsvp</code> and <code>.txt</code> files straight to the SD card from
+                  your phone or computer &mdash; no cable or card reader needed.
                 </p>
               </div>
               <div class="meta-card">

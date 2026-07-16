@@ -13,31 +13,29 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WEB_FIRMWARE_DIR = ROOT / "web" / "firmware"
 BOOT_APP0_GLOB = "framework-arduinoespressif32*/tools/partitions/boot_app0.bin"
+ENV = "m5stack_core2"
 
-FLASH_EXPORTS = (
-    {
-        "env": "m5stack_core2",
-        "binary": "rsvp-m5-core2.bin",
-        "manifest": "manifest.json",
-        "label": "RSVP M5 Core2 firmware",
-    },
+# Reading language chosen at flash time. Each variant bundles only its own gothic efont (the linker
+# drops the rest); `en` bundles none and is the lightest. The full Noto VLW download covers every
+# script on any variant. `default` is what the flasher preselects.
+DEFAULT_LANG = "en"
+LANGUAGES = (
+    {"code": "en", "macro": "RSVP_LANG_EN", "label": "English"},
+    {"code": "ja", "macro": "RSVP_LANG_JA", "label": "Japanese / 日本語"},
+    {"code": "zh", "macro": "RSVP_LANG_ZH", "label": "Simplified Chinese / 简体中文"},
+    {"code": "ko", "macro": "RSVP_LANG_KO", "label": "Korean / 한국어"},
 )
-
-OTA_EXPORTS = (
-    {
-        "env": "m5stack_core2",
-        "binary": "rsvp-m5-core2-ota.bin",
-        "label": "RSVP M5 Core2 OTA firmware",
-    },
-)
+LANG_BY_CODE = {lang["code"]: lang for lang in LANGUAGES}
 
 
-def run(command: list[str], version: str | None = None) -> None:
+def run(command: list[str], version: str | None = None, build_flags: str | None = None) -> None:
     print("+", " ".join(command))
     env = os.environ.copy()
     env.setdefault("PLATFORMIO_SETTING_ENABLE_TELEMETRY", "No")
     if version:
         env["RSVP_FIRMWARE_VERSION"] = version
+    if build_flags:
+        env["PLATFORMIO_BUILD_FLAGS"] = build_flags
     subprocess.run(command, cwd=ROOT, check=True, env=env)
 
 
@@ -125,51 +123,84 @@ def export_ota_binary(env: str, output: Path) -> None:
     shutil.copy2(firmware_path, output)
 
 
-def update_manifest(path: Path, version: str) -> None:
-    manifest = json.loads(path.read_text())
-    manifest["version"] = version
+def write_manifest(path: Path, version: str, binary: str, label: str) -> None:
+    manifest = {
+        "name": f"RSVP M5 ({label})",
+        "version": version,
+        "new_install_prompt_erase": True,
+        "new_install_improv_wait_time": 0,
+        "features": [
+            "Books and articles library",
+            "Device-hosted web companion",
+            "RSS feed downloads",
+        ],
+        "builds": [
+            {
+                "chipFamily": "ESP32",
+                "improv": False,
+                "parts": [{"path": binary, "offset": 0}],
+            }
+        ],
+    }
     path.write_text(json.dumps(manifest, indent=2) + "\n")
 
 
+def write_languages_index(path: Path) -> None:
+    index = {
+        "default": DEFAULT_LANG,
+        "languages": [
+            {
+                "code": lang["code"],
+                "label": lang["label"],
+                "manifest": f"firmware/manifest-{lang['code']}.json",
+            }
+            for lang in LANGUAGES
+        ],
+    }
+    path.write_text(json.dumps(index, indent=2) + "\n")
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build merged binaries for the web flasher.")
+    parser = argparse.ArgumentParser(description="Build per-language merged binaries for the web flasher.")
     parser.add_argument(
         "--skip-build",
         action="store_true",
         help="Use existing .pio build outputs instead of running PlatformIO first.",
     )
     parser.add_argument("--version", default=git_version(), help="Version string for manifests.")
+    parser.add_argument(
+        "--lang",
+        default=",".join(lang["code"] for lang in LANGUAGES),
+        help="Comma-separated reading languages to build (default: all).",
+    )
     args = parser.parse_args()
+
+    codes = [code.strip() for code in args.lang.split(",") if code.strip()]
+    unknown = [code for code in codes if code not in LANG_BY_CODE]
+    if unknown:
+        raise SystemExit(f"Unknown language(s): {', '.join(unknown)}. Known: {', '.join(LANG_BY_CODE)}")
 
     pio = None if args.skip_build else pio_command()
     WEB_FIRMWARE_DIR.mkdir(parents=True, exist_ok=True)
 
-    if not args.skip_build:
-        required_envs = sorted(
-            {
-                export["env"]
-                for export in FLASH_EXPORTS
-            }
-            | {
-                export["env"]
-                for export in OTA_EXPORTS
-            }
-        )
-        for env in required_envs:
+    for code in codes:
+        lang = LANG_BY_CODE[code]
+        flash_binary = f"rsvp-m5-core2-{code}.bin"
+        ota_binary = f"rsvp-m5-core2-{code}-ota.bin"
+
+        if not args.skip_build:
             assert pio is not None
-            run([pio, "run", "-e", env], args.version)
+            # PLATFORMIO_BUILD_FLAGS injects the language selector; the .bin symbols differ per
+            # language, so each build must complete and be copied out before the next overwrites it.
+            run([pio, "run", "-e", ENV], args.version, f"-DRSVP_LANG={lang['macro']}")
 
-    for export in FLASH_EXPORTS:
-        output = WEB_FIRMWARE_DIR / export["binary"]
-        print(f"Exporting {export['label']} -> {output}")
-        merge_firmware(export["env"], output)
-        update_manifest(WEB_FIRMWARE_DIR / export["manifest"], args.version)
+        print(f"Exporting {lang['label']} flash image -> {flash_binary}")
+        merge_firmware(ENV, WEB_FIRMWARE_DIR / flash_binary)
+        print(f"Exporting {lang['label']} OTA image -> {ota_binary}")
+        export_ota_binary(ENV, WEB_FIRMWARE_DIR / ota_binary)
+        write_manifest(WEB_FIRMWARE_DIR / f"manifest-{code}.json", args.version, flash_binary, lang["label"])
 
-    for export in OTA_EXPORTS:
-        ota_output = WEB_FIRMWARE_DIR / export["binary"]
-        print(f"Exporting {export['label']} -> {ota_output}")
-        export_ota_binary(export["env"], ota_output)
-
+    write_languages_index(WEB_FIRMWARE_DIR / "languages.json")
     print(f"Web firmware exported to {WEB_FIRMWARE_DIR}")
     return 0
 

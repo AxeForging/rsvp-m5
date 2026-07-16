@@ -21,6 +21,7 @@
 #include "display/EmbeddedOpenDyslexicFont70.h"
 #include "display/EmbeddedSerifFont.h"
 #include "display/EmbeddedSerifFont70.h"
+#include "i18n/Language.h"
 #include "text/CjkText.h"
 #include "text/LatinText.h"
 
@@ -2001,42 +2002,21 @@ namespace {
 constexpr int kCjkBaseFontPx = 24;
 constexpr int kCjkSizeScale = 1;
 
-// Pick the gothic efont variant from the script of the surrounding text. A bare Han codepoint is
-// ambiguous (JP vs CN vs TW), so we disambiguate by context: kana present -> Japanese; Hangul ->
-// Korean; otherwise pure Han -> Simplified Chinese (the broadest Han coverage, which fixes the tofu
-// squares on Chinese-only characters). Pass before+word+after so the whole section agrees on a font.
+// The bundled fallback efont for the compiled reading language (RSVP_LANG). Only the one referenced
+// here is linked -- the others are dropped by --gc-sections, so a per-language build carries just its
+// own ~0.5-0.7 MB gothic font. `en` bundles none and returns nullptr: M5GFX then substitutes its
+// built-in Font0 (Latin renders, CJK shows tofu) until the complete Noto VLW is downloaded to SD.
 const lgfx::IFont *cjkFontForContext(const String &context) {
-  bool hasKana = false;
-  bool hasHangul = false;
-  bool hasHan = false;
-  size_t i = 0;
-  uint32_t cp = 0;
-  while (i < context.length()) {
-    const size_t before = i;
-    if (!CjkText::decodeUtf8At(context, i, cp)) {
-      i = before + 1;
-      continue;
-    }
-    if ((cp >= 0x3040 && cp <= 0x30FF) || (cp >= 0x31F0 && cp <= 0x31FF)) {
-      hasKana = true;
-    } else if ((cp >= 0x1100 && cp <= 0x11FF) || (cp >= 0x3130 && cp <= 0x318F) ||
-               (cp >= 0xA960 && cp <= 0xA97F) || (cp >= 0xAC00 && cp <= 0xD7FF)) {
-      hasHangul = true;
-    } else if ((cp >= 0x3400 && cp <= 0x4DBF) || (cp >= 0x4E00 && cp <= 0x9FFF) ||
-               (cp >= 0xF900 && cp <= 0xFAFF)) {
-      hasHan = true;
-    }
-  }
-  if (hasHangul) {
-    return &m5gfx::fonts::efontKR_24;
-  }
-  if (hasKana) {
-    return &m5gfx::fonts::efontJA_24;
-  }
-  if (hasHan) {
-    return &m5gfx::fonts::efontCN_24;
-  }
+  (void)context;  // the language is fixed at build time, so no runtime script disambiguation
+#if RSVP_LANG == RSVP_LANG_JA
   return &m5gfx::fonts::efontJA_24;
+#elif RSVP_LANG == RSVP_LANG_ZH
+  return &m5gfx::fonts::efontCN_24;
+#elif RSVP_LANG == RSVP_LANG_KO
+  return &m5gfx::fonts::efontKR_24;
+#else
+  return nullptr;
+#endif
 }
 
 bool isCjkText(const String &s) {

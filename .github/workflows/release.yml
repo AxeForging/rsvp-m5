@@ -93,6 +93,7 @@ jobs:
         run: pip install platformio
 
       - name: Export firmware assets
+        # Builds every per-language variant (en/ja/zh/ko); each bundles only its own font.
         run: python3 tools/export_web_firmware.py --version "${{ steps.release.outputs.tag }}"
 
       - name: Generate CJK font asset
@@ -114,9 +115,13 @@ jobs:
             cat > release-notes.md <<'NOTES'
           RSVP M5 firmware release.
 
-          Assets:
-          - `rsvp-m5-core2.bin` is the full browser-flasher image for fresh installs on the M5Stack Core2.
-          - `rsvp-m5-core2-ota.bin` is the M5Stack Core2 OTA binary.
+          Per-language builds for the M5Stack Core2 (each bundles only its own reading font; pick one
+          in the web flasher). `en` is the lightest; the full multi-script Noto font downloads on demand.
+
+          Assets (per language `<lang>` in en/ja/zh/ko):
+          - `rsvp-m5-core2-<lang>.bin` is the full browser-flasher image for fresh installs.
+          - `rsvp-m5-core2-<lang>-ota.bin` is the matching OTA binary.
+          - `rsvp-m5-cjk.vlw` is the complete Noto CJK font, downloaded on demand for full coverage.
           NOTES
           fi
 
@@ -128,14 +133,12 @@ jobs:
         run: |
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" \
-              web/firmware/rsvp-m5-core2.bin \
-              web/firmware/rsvp-m5-core2-ota.bin \
+              web/firmware/rsvp-m5-core2-*.bin \
               rsvp-m5-cjk.vlw \
               --clobber
           else
             gh release create "$RELEASE_TAG" \
-              web/firmware/rsvp-m5-core2.bin \
-              web/firmware/rsvp-m5-core2-ota.bin \
+              web/firmware/rsvp-m5-core2-*.bin \
               rsvp-m5-cjk.vlw \
               --title "$RELEASE_TAG" \
               --notes-file release-notes.md \
