@@ -54,6 +54,7 @@ const elements = hasDocument
       folderSummary: document.querySelector("#library-folder-summary"),
       list: document.querySelector("#library-list"),
       starterList: document.querySelector("#starter-list"),
+      starterSummary: document.querySelector("#starter-summary"),
       empty: document.querySelector("#library-empty"),
       status: document.querySelector("#library-status"),
       summary: document.querySelector("#library-summary"),
@@ -383,6 +384,13 @@ async function loadStarterCatalog() {
 }
 
 function renderStarterLibrary() {
+  const count = state.starterBooks.length;
+  if (elements.starterSummary) {
+    elements.starterSummary.textContent = count
+      ? `${count} free ${pluralize("classic", count)}`
+      : "";
+  }
+
   elements.starterList.innerHTML = state.starterBooks
     .map((book) => {
       const isCjk = book.language !== "en";
@@ -390,31 +398,22 @@ function renderStarterLibrary() {
       const minutes = isCjk
         ? Math.max(1, Math.round(book.words / CJK_CPM))
         : estimateMinutes(book.words);
-      const countPill = isCjk
+      const count = isCjk
         ? `${formatNumber(book.words)} characters`
         : `${formatNumber(book.words)} ${pluralize("word", book.words)}`;
-      const chapterPill =
-        book.chapters > 1
-          ? `<span class="pill">${formatNumber(book.chapters)} ${pluralize("chapter", book.chapters)}</span>`
-          : "";
       const slug = escapeHtml(book.slug);
       return `
-        <li class="library-item">
-          <div class="library-item-head">
-            <div class="library-item-title">
-              <strong>${escapeHtml(book.title)}</strong>
-              <span>${escapeHtml(book.author)}</span>
-            </div>
+        <li class="starter-item">
+          <div class="starter-item-text">
+            <strong>${escapeHtml(book.title)}</strong>
+            <span class="starter-item-author">${escapeHtml(book.author)}</span>
+          </div>
+          <div class="starter-item-meta">
             <span class="pill">${escapeHtml(langLabel)}</span>
+            <span class="starter-item-stat">${count} &middot; ~${minutes} min</span>
           </div>
-          <div class="library-item-meta">
-            <span class="pill">${countPill}</span>
-            <span class="pill">~${minutes} min</span>
-            ${chapterPill}
-            <span class="pill">${escapeHtml(book.source)}</span>
-          </div>
-          <div class="library-item-actions">
-            <button class="tool-button tool-button-primary" type="button" data-action="add-starter" data-slug="${slug}">Add to Workspace</button>
+          <div class="starter-item-actions">
+            <button class="tool-button tool-button-primary" type="button" data-action="add-starter" data-slug="${slug}">Add</button>
             <a class="tool-button" href="library/${encodeURIComponent(book.slug)}.rsvp" download="${slug}.rsvp">Download</a>
           </div>
         </li>
