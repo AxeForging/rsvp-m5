@@ -177,6 +177,20 @@
         font-size: 1.32rem;
       }
 
+      /* Free Library: bare .card like #features-section, with a responsive card grid. */
+      #starter-section {
+        padding: clamp(26px, 4vw, 32px) clamp(24px, 4vw, 30px) clamp(32px, 5vw, 44px);
+      }
+      #starter-section .section-kicker {
+        margin-bottom: 8px;
+      }
+      #starter-section .section-title {
+        font-size: 1.32rem;
+      }
+      #starter-list {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      }
+
       /* AxeForge raccoon mascots */
       .intro-top {
         display: grid;
@@ -1357,6 +1371,17 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <section class="card" id="starter-section">
+        <span class="section-kicker">Free Reading</span>
+        <span class="section-title">Free Library</span>
+        <p class="workspace-copy">
+          New reader, empty card? Load a famous public-domain classic straight into the workspace
+          below, then sync it to your SD card. Every title is free and converted offline &mdash;
+          sourced from Project Gutenberg and Aozora Bunko.
+        </p>
+        <ul class="library-list" id="starter-list"></ul>
       </section>
 
       <section class="card step-card" id="workspace-section">

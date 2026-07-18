@@ -17,8 +17,13 @@ const stripExtension = rsvpStripExtension;
 // display-only guide; the device reads at whatever WPM the user sets.
 const ESTIMATE_WPM = 300;
 
+// Free Library (starter catalog) display helpers.
+const LANG_LABELS = { en: "English", ja: "日本語", zh: "中文", ko: "한국어" };
+const CJK_CPM = 500; // characters/minute — CJK reading-time guide (no whitespace to count words)
+
 const state = {
   items: [],
+  starterBooks: [],
   directoryHandle: null,
   folderInventory: null,
   outputMode: DEFAULT_OUTPUT_MODE,
@@ -48,6 +53,7 @@ const elements = hasDocument
       folderLabel: document.querySelector("#library-folder-label"),
       folderSummary: document.querySelector("#library-folder-summary"),
       list: document.querySelector("#library-list"),
+      starterList: document.querySelector("#starter-list"),
       empty: document.querySelector("#library-empty"),
       status: document.querySelector("#library-status"),
       summary: document.querySelector("#library-summary"),
@@ -206,6 +212,8 @@ function initialize() {
     );
   }
 
+  initStarterLibrary();
+
   renderLibrary();
   refreshUi();
 }
@@ -335,6 +343,120 @@ function renderLibrary() {
       `;
     })
     .join("");
+}
+
+// ---- Free Library (starter catalog served from web/library/) ----
+
+function initStarterLibrary() {
+  if (!elements.starterList) {
+    return;
+  }
+  elements.starterList.addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-action='add-starter']");
+    if (!button) {
+      return;
+    }
+    const book = state.starterBooks.find((entry) => entry.slug === button.dataset.slug);
+    if (book) {
+      await addStarterBook(book, button);
+    }
+  });
+  loadStarterCatalog();
+}
+
+async function loadStarterCatalog() {
+  try {
+    const response = await fetch("library/library.json", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(String(response.status));
+    }
+    const data = await response.json();
+    state.starterBooks = Array.isArray(data.books) ? data.books : [];
+    renderStarterLibrary();
+  } catch {
+    // No catalog served (e.g. local dev without the library/ folder) — hide the section quietly.
+    const section = document.querySelector("#starter-section");
+    if (section) {
+      section.hidden = true;
+    }
+  }
+}
+
+function renderStarterLibrary() {
+  elements.starterList.innerHTML = state.starterBooks
+    .map((book) => {
+      const isCjk = book.language !== "en";
+      const langLabel = LANG_LABELS[book.language] || book.language.toUpperCase();
+      const minutes = isCjk
+        ? Math.max(1, Math.round(book.words / CJK_CPM))
+        : estimateMinutes(book.words);
+      const countPill = isCjk
+        ? `${formatNumber(book.words)} characters`
+        : `${formatNumber(book.words)} ${pluralize("word", book.words)}`;
+      const chapterPill =
+        book.chapters > 1
+          ? `<span class="pill">${formatNumber(book.chapters)} ${pluralize("chapter", book.chapters)}</span>`
+          : "";
+      const slug = escapeHtml(book.slug);
+      return `
+        <li class="library-item">
+          <div class="library-item-head">
+            <div class="library-item-title">
+              <strong>${escapeHtml(book.title)}</strong>
+              <span>${escapeHtml(book.author)}</span>
+            </div>
+            <span class="pill">${escapeHtml(langLabel)}</span>
+          </div>
+          <div class="library-item-meta">
+            <span class="pill">${countPill}</span>
+            <span class="pill">~${minutes} min</span>
+            ${chapterPill}
+            <span class="pill">${escapeHtml(book.source)}</span>
+          </div>
+          <div class="library-item-actions">
+            <button class="tool-button tool-button-primary" type="button" data-action="add-starter" data-slug="${slug}">Add to Workspace</button>
+            <a class="tool-button" href="library/${encodeURIComponent(book.slug)}.rsvp" download="${slug}.rsvp">Download</a>
+          </div>
+        </li>
+      `;
+    })
+    .join("");
+}
+
+async function addStarterBook(book, button) {
+  button.disabled = true;
+  try {
+    const response = await fetch(`library/${encodeURIComponent(book.slug)}.rsvp`, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(String(response.status));
+    }
+    const text = await response.text();
+    const file = new File([text], `${book.slug}.rsvp`, { type: "text/plain" });
+    await importFiles([file], "library");
+
+    // The .rsvp passthrough reports 0 words and a filename title, so overlay the real catalog
+    // metadata onto the freshly imported item.
+    const item = state.items.find((entry) => entry.key === `${book.slug}.rsvp`.toLowerCase());
+    if (item) {
+      item.title = book.title;
+      item.author = book.author;
+      item.wordCount = book.words;
+      item.chapterCount = book.chapters;
+      renderLibrary();
+      refreshUi();
+    }
+    document
+      .querySelector("#workspace-section")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch {
+    setStatus(
+      "Could not add book",
+      `${book.title} could not be loaded. Check your connection and try again.`,
+      "error",
+    );
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function setStatus(title, message, tone = "info") {
