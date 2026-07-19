@@ -59,7 +59,6 @@ class InstallFirmware extends HTMLElement {
         </button>
         <div class="section-body" id="install-content">
           <div class="section-body-inner">
-            <p>Flash the current browser installer manifest, then use the next steps to prepare books and sync them onto the SD card.</p>
             <p>Put the device in boot mode before starting the installer:</p>
             <ol>
               <li>Turn the device off.</li>

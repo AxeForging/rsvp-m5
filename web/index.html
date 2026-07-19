@@ -1293,51 +1293,31 @@
         </div>
         <div class="meta-grid">
           <div class="meta-card">
-            <span>Read</span>
-            <strong>One word at a time</strong>
-            <p class="meta-card-copy">Words flash in place so your eyes never move. Adjustable speed, a focus highlight, and dyslexia-friendly fonts.</p>
-          </div>
-          <div class="meta-card">
-            <span>Control</span>
-            <strong>Tap to play or pause</strong>
-            <p class="meta-card-copy">A quick tap anywhere plays or pauses; on-screen zones and the front buttons handle speed. Nothing fiddly to learn.</p>
-          </div>
-          <div class="meta-card">
-            <span>Connect</span>
-            <strong>Keeps your phone online</strong>
-            <p class="meta-card-copy">Set up your home Wi-Fi once and the reader joins it — your phone keeps its internet while you send books across.</p>
-          </div>
-          <div class="meta-card">
-            <span>Sync</span>
-            <strong>Wireless library</strong>
-            <p class="meta-card-copy">Upload books and articles, adjust settings, and manage RSS feeds from any browser. No app to install.</p>
-          </div>
-          <div class="meta-card">
-            <span>Convert</span>
+            <span>Any format</span>
             <strong>Bring any book</strong>
-            <p class="meta-card-copy">Turn EPUB, TXT, Markdown, or HTML into reader files right in your browser, or copy them straight to the SD card.</p>
-          </div>
-          <div class="meta-card">
-            <span>Maintain</span>
-            <strong>Updates over the air</strong>
-            <p class="meta-card-copy">Once Wi-Fi is set, the reader can update its own firmware — no cable needed.</p>
+            <p class="meta-card-copy">Convert EPUB, TXT, Markdown, or HTML into reader files in the browser — or drop them straight on the SD card.</p>
           </div>
           <div class="meta-card">
             <span>Languages</span>
-            <strong>Reads Japanese, Chinese &amp; Korean</strong>
-            <p class="meta-card-copy">Pick your reading language when you flash — the device bundles its font and the on-screen menus are translated too. Switch any time; other scripts download over Wi-Fi.</p>
+            <strong>Japanese, Chinese &amp; Korean</strong>
+            <p class="meta-card-copy">Pick your reading language when you flash: bundled font, translated menus, switch any time.</p>
+          </div>
+          <div class="meta-card">
+            <span>Wireless</span>
+            <strong>Sync without cables</strong>
+            <p class="meta-card-copy">Send books, articles, and RSS feeds to the reader over Wi-Fi from any browser — no app to install.</p>
           </div>
         </div>
       </section>
 
       <install-firmware></install-firmware>
 
-      <section class="card step-card" id="sdcard-section">
+      <section class="card step-card is-collapsed" id="sdcard-section">
         <button
           class="step-card-toggle"
           id="sdcard-toggle"
           type="button"
-          aria-expanded="true"
+          aria-expanded="false"
           aria-controls="sdcard-content"
         >
           <span class="section-header-main">
@@ -1352,22 +1332,16 @@
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
-        <div class="section-body" id="sdcard-content">
+        <div class="section-body" id="sdcard-content" hidden>
           <div class="section-body-inner">
             <p>
-              The recommended path is to convert supported source books in the browser, then place
-              the generated <code>.rsvp</code> files in the SD card&rsquo;s <code>/books/books</code> folder.
+              Convert source books in the browser, then place the generated <code>.rsvp</code> files
+              in the SD card&rsquo;s <code>/books/books</code> folder.
             </p>
             <ol>
               <li>Remove the SD card and use a card reader, or send files wirelessly with <code>Sync</code> from the device menu.</li>
               <li>Pick the SD card&rsquo;s <code>/books/books</code> folder in the workspace below, then import, clean sidecars, and sync.</li>
             </ol>
-            <p class="inline-note">
-              The firmware reads <code>.rsvp</code> and <code>.txt</code> files from
-              <code>/books/books</code>, <code>/books/articles</code>, and files directly under
-              <code>/books</code>. Convert EPUB, HTML, and Markdown in the browser first, then place
-              the generated <code>.rsvp</code> files on the card.
-            </p>
           </div>
           <div class="section-body-inner">
             <div class="section-card-stack">
@@ -1524,18 +1498,6 @@
                   <strong id="library-folder-summary">Pick the SD card&rsquo;s /books/books folder to scan it</strong>
                 </div>
               </div>
-
-              <p class="inline-note">
-                Put your SD card in a reader, then <strong>Connect SD Card</strong> and pick its
-                <code>/books/books</code> folder for one-click import, cleanup, and sync. No card reader?
-                Add books from your computer and download the <code>.rsvp</code> files instead. Everything
-                is converted locally in your browser &mdash; nothing is uploaded.
-              </p>
-              <p class="inline-note">
-                Don&rsquo;t want to keep pulling the SD card? Open <strong>Sync</strong> on the device
-                (Menu or top-edge swipe), join its <code>RSVP-M5</code> Wi-Fi network, and upload the
-                <code>.rsvp</code> files wirelessly &mdash; no cable, no card removal.
-              </p>
 
               <div class="workspace-status" id="library-status" data-tone="info">
                 <strong>Ready to build a library</strong>
@@ -1700,7 +1662,7 @@
         });
       }
 
-      initSectionToggle("sdcard-section", false);
+      initSectionToggle("sdcard-section", true);
       initSectionToggle("starter-section", true);
       initSectionToggle("workspace-section", false);
     </script>
